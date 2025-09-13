@@ -9,9 +9,9 @@
 - **Streaming Chat** – Receive responses from LM Studio’s API at `http://localhost:1234`.
 - **Web Search** – Perform text and image searches using a local SearXNG instance.
 - **YouTube Transcripts** – Extract transcript text from YouTube videos (supports multiple languages).
-- **PDF Extraction** – Upload PDFs and extract their text for use in the app.
+- **PDF Extraction** – Upload PDFs and extract their text for use in the ui.
 - **Weather Data** – Get forecasts, air quality, and UV index from Open-Meteo.
-- **Custom Prompts** – Edit system prompts directly in the settings modal.
+- **Custom Prompts** – Edit system prompts directly in the settings.
 
 ---
 
