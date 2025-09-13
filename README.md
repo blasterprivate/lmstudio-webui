@@ -19,9 +19,9 @@ Built with **Flask (Python)** and **JavaScript**
 
 ## Requirements
 
-* **LM Studio** API enabled at `http://localhost:1234/v1`
+* **LM Studio** API enabled at `http://localhost:1234/v1` (CORS enabled)
 * **Python 3.8+** (tested with 3.12.3)
-* **SearXNG** local instance at `http://127.0.0.1:8888/search` (JSON enabled)
+* **SearXNG** local instance at `http://127.0.0.1:8888/search` (JSON enabled at settings.yml)
 
 ---
 
@@ -73,17 +73,6 @@ python -m http.server 8000
 ```
 
 Open `http://localhost:8000` in your browser.
-
-3. **Feautres**
-
-| Feature                 | How to Use                                                                                  |
-| ----------------------- | ------------------------------------------------------------------------------------------- |
-| **Chat**                | Select a model, type a prompt in the input box, and click **Send** for streaming responses. |
-| **Web Search**          | Enable the globe icon to include text and image results from SearXNG.                       |
-| **YouTube Transcripts** | Enable the YouTube icon and paste a video URL to extract transcripts.                       |
-| **PDF Upload**          | Click the PDF icon to upload a file and extract its text.                                   |
-| **Weather Queries**     | Ask “weather in \[city]” directly in the chat input to retrieve forecasts and conditions.   |
-| **Custom Prompts**      | Use the settings icon to edit or replace system prompts.                                    |
 
 ---
 
