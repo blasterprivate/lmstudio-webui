@@ -3,7 +3,6 @@
 A lightweight, browser-based WebUI for LM Studio.
 Provides streaming chat, web search, YouTube transcript extraction, PDF processing, and weather queries.
 Built with **Flask (Python)** and **JavaScript**
-
 ---
 
 ## Features
