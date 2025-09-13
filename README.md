@@ -28,7 +28,7 @@
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/yourusername/lmstudio-webui.git
+git clone https://github.com/blasterprivate/lmstudio-webui.git
 cd lmstudio-webui
 ````
 
