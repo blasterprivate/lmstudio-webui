@@ -39,11 +39,7 @@ cd lmstudio-webui
 python -m venv venv
 
 # Activate
-# Linux/macOS:
 source venv/bin/activate
-
-# Windows:
-venv/Scripts/activate
 ```
 
 ### 3. Install Dependencies
