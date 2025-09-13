@@ -18,7 +18,7 @@
 ## Requirements
 
 - **LM Studio** API enabled at `http://localhost:1234/v1` (CORS enabled)
-- **Python 3.8+** (tested with 3.12.3)
+- **Python 3.13+** (tested with 3.13.7)
 - **SearXNG** local instance at `http://127.0.0.1:8888/search` (JSON enabled in `settings.yml`)
 
 ---
