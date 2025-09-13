@@ -1,5 +1,5 @@
 # lmstudio-webui
-- this is experimental webui-chat alternative for myself and felt i should share it
+- this is experimental webui-chat alternative works with lm Studio
 
 ![Alt text](screenshots/screen1.png)
 ---
