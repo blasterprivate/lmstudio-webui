@@ -1,5 +1,5 @@
 # lmstudio-webui
-- this is experimental tool alternative for myself and felt i should share it
+- this is experimental webui-chat alternative for myself and felt i should share it
 
 ![Alt text](screenshots/screen1.png)
 ---
