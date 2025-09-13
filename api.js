@@ -1,4 +1,3 @@
-can you organize my code but keep everything the same just add comments and organize:
 const LM_ENDPOINT = "http://localhost:1234/v1/chat/completions";
 const LM_MODEL = "Choose Model";
 const CRAWL_ENDPOINT = "http://localhost:5000/crawl";
