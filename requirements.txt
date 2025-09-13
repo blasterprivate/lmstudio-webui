@@ -1,0 +1,11 @@
+flask
+flask-cors
+requests
+beautifulsoup4
+youtube-transcript-api
+pytube
+yt-dlp
+timezonefinder
+pytz
+pdfplumber
+pillow
