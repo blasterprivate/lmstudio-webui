@@ -21,3 +21,9 @@
    * Modify the system to detect URLs embedded in code snippets or examples.
    * Skip fetching or processing these URLs to avoid unnecessary requests or errors.
    * Ensure that only “live” URLs outside code blocks are fetched.
+
+5. **Refine Image Size Checking:**
+
+   * Implement stricter validation for image dimensions and file size.
+   * Ensure images meet the required resolution or aspect ratio before processing.
+   * Provide warnings or automatic adjustments for images that are too large, too small, or have incorrect dimensions.
