@@ -129,7 +129,7 @@ Then open `http://localhost:8000` in your browser.
 ---
 ## Security
 
-This Project is designed for local use only. Do not expose your LM Studio server or Backend server to the public internet without proper security measures in place.
+This Project is designed for local use only. Do not expose your LM Studio server or Backend server to the public internet without proper security measures.
 
 ---
 ## Contributing
