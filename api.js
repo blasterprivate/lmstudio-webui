@@ -4,6 +4,7 @@ const CRAWL_ENDPOINT = "http://localhost:5000/crawl";
 const WEBSEARCH_ENDPOINT = "http://localhost:5000/websearch";
 const WEATHER_ENDPOINT = "http://localhost:5000/weather";
 const NEWS_ENDPOINT = "http://localhost:5000/news";
+const YOUTUBE_ENDPOINT = "http://localhost:5000/youtube";
 let allowYouTubeEmbeds = false;
 let currentChat = [];
 let savedChats = [];
@@ -22,7 +23,7 @@ const settingsBtn = document.getElementById("settingsBtn");
 const imageModal = document.getElementById("imageModal");
 const expandedImage = document.getElementById("expandedImage");
 
-// NEW: Auto-scroll flag (starts enabled)
+// Auto-scroll flag (starts enabled)
 let autoScroll = true;
 
 if (window.DOMPurify) {
@@ -92,7 +93,7 @@ let systemPrompts = {
   {search_data}
   ----- WEB RESULTS END -----`,
 
-  crawl: `You are an AI assistant tasked with summarizing online content — including YouTube video transcripts and webpage text — to provide a rich, clear, and engaging experience.
+  crawl: `You are an AI assistant tasked with summarizing webpage content to provide a rich, clear, and engaging experience.
 
 Here is the content from the provided URL:
 ----- SITE CONTENT START -----
@@ -147,8 +148,28 @@ Additional metadata (if available):
 
   Synthesize information across articles to highlight trends, differing perspectives, or significant developments in the overview and summaries, emphasizing balance and neutrality.
   If no articles or valid data are available, provide a polite explanation, offer to search again, or provide general information based on your knowledge.
-  Use a clear, neutral, and engaging tone suitable for news reporting, ensuring accessibility for a general audience while maintaining depth and elegance in summaries.`
+  Use a clear, neutral, and engaging tone suitable for news reporting, ensuring accessibility for a general audience while maintaining depth and elegance in summaries.`,
+
+  youtube: `You are an AI assistant tasked with summarizing YouTube video transcripts to provide a clear and engaging response.
+
+Here is the transcript from the YouTube video:
+----- VIDEO TRANSCRIPT START -----
+{content}
+----- VIDEO TRANSCRIPT END -----
+
+Additional metadata:
+----- METADATA START -----
+{metadata}
+----- METADATA END -----
+
+Your task:
+- Summarize the video content in a concise, engaging manner using Markdown format.
+- Include key points, main topics, or notable quotes from the transcript.
+- Reference the metadata (e.g., video title, channel) where relevant.
+- If the transcript is incomplete or irrelevant, note this politely and offer general insights.
+- Use a friendly and conversational tone.`
 };
+
 async function loadSettings() {
   try {
     const response = await fetch("settings.json");
@@ -180,7 +201,6 @@ function isValidUrl(string) {
   }
 }
 
-
 function openSettingsModal() {
   settingsModalContent.innerHTML = `
   <h3 style="margin: 0 0 12px; color: var(--accent); font-weight: 600;">Edit System Prompts</h3>
@@ -190,6 +210,8 @@ function openSettingsModal() {
   <textarea id="websearchPrompt" class="settings-textarea">${systemPrompts.websearch}</textarea>
   <label>URL Crawl Prompt</label>
   <textarea id="crawlPrompt" class="settings-textarea">${systemPrompts.crawl}</textarea>
+  <label>YouTube Prompt</label>
+  <textarea id="youtubePrompt" class="settings-textarea">${systemPrompts.youtube}</textarea>
   <label>PDF Prompt</label>
   <textarea id="pdfPrompt" class="settings-textarea">${systemPrompts.pdf}</textarea>
   <label>News Prompt</label>
@@ -209,6 +231,7 @@ function openSettingsModal() {
     systemPrompts.weather = document.getElementById("weatherPrompt").value.trim();
     systemPrompts.websearch = document.getElementById("websearchPrompt").value.trim();
     systemPrompts.crawl = document.getElementById("crawlPrompt").value.trim();
+    systemPrompts.youtube = document.getElementById("youtubePrompt").value.trim();
     systemPrompts.pdf = document.getElementById("pdfPrompt").value.trim();
     systemPrompts.news = document.getElementById("newsPrompt").value.trim();
     await saveSettings();
@@ -222,21 +245,19 @@ function openSettingsModal() {
   });
 }
 
-// MODIFIED: scrollToBottom now respects autoScroll flag
 function scrollToBottom() {
   if (autoScroll) {
     messagesEl.scrollTop = messagesEl.scrollHeight;
   }
 }
 
-// NEW: Helper to highlight code blocks (reusable, with error handling)
 function highlightCodeBlocks(container) {
   if (typeof Prism === 'undefined') {
     console.warn('Prism.js not loaded yet; skipping highlight.');
     return;
   }
   container.querySelectorAll('pre[class*="language-"]').forEach(el => {
-    if (!el.dataset.highlighted) {  // Avoid re-highlighting during streaming
+    if (!el.dataset.highlighted) {
       Prism.highlightElement(el);
       el.dataset.highlighted = 'true';
     }
@@ -260,38 +281,20 @@ function sanitizeAndRenderMarkdown(text) {
   const parser = new DOMParser();
   const doc = parser.parseFromString(clean, 'text/html');
 
-  // Add language class to <code> if missing
   doc.querySelectorAll('pre code').forEach(code => {
     if (![...code.classList].some(c => c.startsWith('language-'))) {
       const firstLine = code.textContent.split('\n')[0].toLowerCase();
-      let lang = 'text'; // default
-
+      let lang = 'text';
       if (firstLine.includes('css') || firstLine.includes('@media')) lang = 'css';
       else if (firstLine.includes('js') || firstLine.includes('javascript')) lang = 'javascript';
       else if (firstLine.includes('python') || firstLine.includes('def')) lang = 'python';
       else if (firstLine.includes('html') || firstLine.includes('<!doctype')) lang = 'markup';
-
       code.classList.add(`language-${lang}`);
     }
   });
 
   return doc.body.innerHTML;
 }
-
-// Highlight inserted code blocks
-function highlightCodeBlocks(container) {
-  if (typeof Prism === 'undefined') {
-    console.warn('Prism.js not loaded yet; skipping highlight.');
-    return;
-  }
-  container.querySelectorAll('pre code').forEach(el => {
-    if (!el.dataset.highlighted) {  // Avoid re-highlighting
-      Prism.highlightElement(el);
-      el.dataset.highlighted = 'true';
-    }
-  });
-}
-
 
 function extractUrl(text) {
   const urlRegex = /(https?:\/\/[^\s]+)/i;
@@ -465,13 +468,10 @@ function createBubbleElement(markdownText = "", type = "bot", hasSources = false
   textContainer.className = "bubble-text";
   textContainer.innerHTML = sanitizeAndRenderMarkdown(markdownText || "");
 
-  // NEW: Highlight code blocks after initial render
   highlightCodeBlocks(textContainer);
 
   bubble.appendChild(textContainer);
   addPreCopyButtons(bubble);
-
-  // Images will be added later, after streaming completes
 
   wrapper.appendChild(bubble);
 
@@ -479,7 +479,6 @@ function createBubbleElement(markdownText = "", type = "bot", hasSources = false
   controls.className = "controls";
   wrapper.appendChild(controls);
 
-  // Close image modal on click
   imageModal.addEventListener("click", () => {
     imageModal.classList.remove("active");
     expandedImage.src = "";
@@ -531,7 +530,6 @@ function streamMessage(textContainer, thinkingBubble, onChunk, onComplete) {
         a.setAttribute("target", "_blank");
         a.setAttribute("rel", "noopener noreferrer");
       });
-
     } else if (!hasContent) {
       try { thinkingBubble.wrapper.remove(); } catch (e) {}
     }
@@ -548,7 +546,6 @@ function addBubble(text, type = "bot", hasSources = false, sourceUrl = "", sourc
   }
   messagesEl.appendChild(wrapper);
 
-
   const isThinking = type === "thinking";
   const isSearchingBubble = typeof text === "string" && (text.toLowerCase().includes("searching") || text.toLowerCase().includes("thinking"));
 
@@ -560,40 +557,32 @@ function addBubble(text, type = "bot", hasSources = false, sourceUrl = "", sourc
     copyBtn.addEventListener("click", async (e) => {
       e.stopPropagation();
       try {
-        // Clone the text container to avoid modifying the original
         const tempDiv = document.createElement('div');
-        tempDiv.innerHTML = bubble.innerHTML;  // Use the full bubble for accuracy (includes any embeds/images, but we'll strip them)
+        tempDiv.innerHTML = bubble.innerHTML;
 
-    // Recursive function to strip all tags and normalize whitespace
-    function stripTagsAndNormalize(node) {
-      let text = '';
-      if (node.nodeType === Node.TEXT_NODE) {
-        text = node.textContent || node.innerText || '';
-      } else if (node.nodeType === Node.ELEMENT_NODE) {
-        // Skip non-text elements like images/iframes
-        if (['IMG', 'IFRAME', 'PRE', 'CODE'].includes(node.tagName)) {
-          if (node.tagName === 'PRE' || node.tagName === 'CODE') {
-            // For code blocks, preserve some structure but trim
-            text = (node.textContent || '').replace(/\n\s*\n/g, '\n\n').trim();
+        function stripTagsAndNormalize(node) {
+          let text = '';
+          if (node.nodeType === Node.TEXT_NODE) {
+            text = node.textContent || node.innerText || '';
+          } else if (node.nodeType === Node.ELEMENT_NODE) {
+            if (['IMG', 'IFRAME', 'PRE', 'CODE'].includes(node.tagName)) {
+              if (node.tagName === 'PRE' || node.tagName === 'CODE') {
+                text = (node.textContent || '').replace(/\n\s*\n/g, '\n\n').trim();
+              }
+            } else {
+              for (let child of node.childNodes) {
+                text += stripTagsAndNormalize(child);
+              }
+            }
+            text = text.replace(/\s+/g, ' ').replace(/ \n/g, '\n').trim();
           }
-          // For images/embeds, optionally add a placeholder like "[Image]" if desired
-          // text += '[Embedded Media] ';
-        } else {
-          for (let child of node.childNodes) {
-            text += stripTagsAndNormalize(child);
-          }
+          return text;
         }
-        // Normalize: Replace multiple spaces/newlines with single, then trim
-        text = text.replace(/\s+/g, ' ').replace(/ \n/g, '\n').trim();
-      }
-      return text;
-    }
 
-    const cleanText = stripTagsAndNormalize(tempDiv);
-
-    await navigator.clipboard.writeText(cleanText);
-    copyBtn.innerHTML = '<i class="fas fa-check"></i>';
-    setTimeout(() => copyBtn.innerHTML = '<i class="fas fa-copy"></i>', 1400);
+        const cleanText = stripTagsAndNormalize(tempDiv);
+        await navigator.clipboard.writeText(cleanText);
+        copyBtn.innerHTML = '<i class="fas fa-check"></i>';
+        setTimeout(() => copyBtn.innerHTML = '<i class="fas fa-copy"></i>', 1400);
       } catch (err) {
         console.error('Copy failed:', err);
         copyBtn.innerHTML = '<i class="fas fa-times"></i>';
@@ -630,10 +619,7 @@ function addBubble(text, type = "bot", hasSources = false, sourceUrl = "", sourc
             const newTextContainer = document.createElement("div");
             newTextContainer.className = "bubble-text";
             newTextContainer.innerHTML = sanitizeAndRenderMarkdown(newText);
-
-            // NEW: Highlight code blocks after edit save
             highlightCodeBlocks(newTextContainer);
-
             bubble.appendChild(newTextContainer);
             controls.innerHTML = "";
             controls.appendChild(copyBtn);
@@ -650,7 +636,6 @@ function addBubble(text, type = "bot", hasSources = false, sourceUrl = "", sourc
               }
             }
             addPreCopyButtons(bubble);
-
           }
         });
         const cancelBtn = document.createElement("button");
@@ -661,16 +646,12 @@ function addBubble(text, type = "bot", hasSources = false, sourceUrl = "", sourc
           const newTextContainer = document.createElement("div");
           newTextContainer.className = "bubble-text";
           newTextContainer.innerHTML = sanitizeAndRenderMarkdown(currentText);
-
-          // NEW: Highlight code blocks after edit cancel
           highlightCodeBlocks(newTextContainer);
-
           bubble.appendChild(newTextContainer);
           controls.innerHTML = "";
           controls.appendChild(copyBtn);
           controls.appendChild(editBtn);
           addPreCopyButtons(bubble);
-
         });
         controls.appendChild(saveBtn);
         controls.appendChild(cancelBtn);
@@ -721,13 +702,10 @@ function addBubble(text, type = "bot", hasSources = false, sourceUrl = "", sourc
           const textContainer = userMessageElement.querySelector(".bubble-text");
           if (textContainer) {
             textContainer.innerHTML = sanitizeAndRenderMarkdown(userMessage.content);
-
-            // NEW: Highlight code blocks after retry restore
             highlightCodeBlocks(textContainer);
-
           }
         } else {
-          const bubble = addBubble(userMessage.content, "user", false, "", "", null, "", null, null, userMessageId);
+          const bubble = addBubble(userMessage.content, "user");
           userMessage.id = bubble.wrapper.dataset.messageId;
         }
 
@@ -751,17 +729,14 @@ function addBubble(text, type = "bot", hasSources = false, sourceUrl = "", sourc
       sourcesWrapper.style.padding = "6px";
       sourcesWrapper.style.borderRadius = "6px";
 
-      // Add FontAwesome icon
       const iconSpan = document.createElement("span");
       iconSpan.innerHTML = '<i class="fas fa-link"></i>';
       iconSpan.style.marginRight = "6px";
       sourcesWrapper.appendChild(iconSpan);
 
-      // Add container for article icons
       const iconContainer = document.createElement("div");
       iconContainer.className = "article-icons";
 
-      // Populate article icons (favicons) based on source content
       let sourceCount = 0;
       let articles = [];
       if (metadata && metadata.fromNews) {
@@ -776,11 +751,10 @@ function addBubble(text, type = "bot", hasSources = false, sourceUrl = "", sourc
           console.error("Error parsing web search sourceContent:", e);
         }
       } else {
-        sourceCount = 1; // Default to 1 for other sources
+        sourceCount = 1;
         articles = [{ site: sourceUrl }];
       }
 
-      // Helper function to get favicon URL
       function getFaviconUrl(url) {
         if (!url || !url.startsWith("http")) return null;
         try {
@@ -791,7 +765,6 @@ function addBubble(text, type = "bot", hasSources = false, sourceUrl = "", sourc
         }
       }
 
-      // Add up to 3 article icons
       for (let i = 0; i < sourceCount; i++) {
         const article = articles[i];
         const faviconUrl = getFaviconUrl(article.site);
@@ -805,14 +778,14 @@ function addBubble(text, type = "bot", hasSources = false, sourceUrl = "", sourc
           img.style.marginRight = "2px";
           img.style.objectFit = "cover";
           img.onerror = () => {
-            img.style.display = "none"; // Hide if favicon fails to load
+            img.style.display = "none";
             const fallback = document.createElement("span");
             fallback.style.width = "6px";
             fallback.style.height = "6px";
             fallback.style.backgroundColor = "#bbb";
             fallback.style.borderRadius = "50%";
             fallback.style.display = "inline-block";
-            img.parentNode.replaceChild(fallback, img);
+            iconContainer.appendChild(fallback);
           };
           iconContainer.appendChild(img);
         } else {
@@ -833,17 +806,6 @@ function addBubble(text, type = "bot", hasSources = false, sourceUrl = "", sourc
         modalContentEl.innerHTML = "";
         let sections = [];
 
-        // (Rest of the existing event listener code remains the same)
-        function getFaviconUrl(url) {
-          if (!url || !url.startsWith("http")) return null;
-          try {
-            const hostname = new URL(url).hostname;
-            return `https://www.google.com/s2/favicons?domain=${hostname}`;
-          } catch (e) {
-            return null;
-          }
-        }
-
         if (metadata && metadata.fromWebSearch) {
           let searchResults;
           try {
@@ -857,8 +819,8 @@ function addBubble(text, type = "bot", hasSources = false, sourceUrl = "", sourc
             return {
               title: hostname,
               favicon: getFaviconUrl(result.site),
-                                       url: isValidUrl(result.site) ? result.site : null,
-                                       content: isValidUrl(result.site) ? `Full URL: ${result.site}\n\n${result.summary || "No summary available"}` : `Source ${idx + 1}\n\n${result.summary || "No summary available"}`
+              url: isValidUrl(result.site) ? result.site : null,
+              content: isValidUrl(result.site) ? `Full URL: ${result.site}\n\n${result.summary || "No summary available"}` : `Source ${idx + 1}\n\n${result.summary || "No summary available"}`
             };
           });
         } else if (metadata && metadata.fromWeather) {
@@ -866,8 +828,8 @@ function addBubble(text, type = "bot", hasSources = false, sourceUrl = "", sourc
             {
               title: "Open Meteo",
               favicon: getFaviconUrl("https://open-meteo.com/"),
-                                      url: sourceUrl,
-                                      content: sourceContent
+              url: sourceUrl,
+              content: sourceContent
             }
           ];
         } else if (metadata && metadata.fromNews) {
@@ -877,8 +839,8 @@ function addBubble(text, type = "bot", hasSources = false, sourceUrl = "", sourc
             return {
               title: hostname || `Article ${idx + 1}`,
               favicon: getFaviconUrl(article.site),
-                                  url: article.site || sourceUrl,
-                                  content: `${article.summary || "No summary available"}\n\nFull URL: ${article.site || sourceUrl || "No URL available"}`
+              url: article.site || sourceUrl,
+              content: `${article.summary || "No summary available"}\n\nFull URL: ${article.site || sourceUrl || "No URL available"}`
             };
           });
         } else if (metadata && metadata.fromPDF) {
@@ -889,29 +851,28 @@ function addBubble(text, type = "bot", hasSources = false, sourceUrl = "", sourc
               content: sourceContent.slice(0, 5000) || "No content available"
             }
           ];
-        } else if (metadata) {
-  // Handle nested metadata for YouTube (or similar)
-  const videoMetadata = metadata.metadata || metadata;  // If outer metadata wraps it; adjust if needed
-  sections = [
-    { title: "Video Title", favicon: null, content: videoMetadata.title || "Unknown" },
-    { title: "Channel", favicon: null, content: videoMetadata.channel_name || "Unknown" },
-    { title: "Language", favicon: null, content: videoMetadata.language || "Unknown" },
-    { title: "Generated Transcript", favicon: null, content: videoMetadata.is_generated ? "Yes" : "No" },
-    {
-      title: "Source URL",
-      favicon: getFaviconUrl(sourceUrl),
-      url: sourceUrl,
-      content: sourceUrl
-    },
-    { title: "Transcript", favicon: null, content: sourceContent }
-  ];
-} else {
+        } else if (metadata && metadata.fromYouTube) {
+          const videoMetadata = metadata.metadata || metadata;
+          sections = [
+            { title: "Video Title", favicon: null, content: videoMetadata.title || "Unknown" },
+            { title: "Channel", favicon: null, content: videoMetadata.channel_name || "Unknown" },
+            { title: "Language", favicon: null, content: videoMetadata.language || "Unknown" },
+            { title: "Generated Transcript", favicon: null, content: videoMetadata.is_generated ? "Yes" : "No" },
+            {
+              title: "Source URL",
+              favicon: getFaviconUrl(sourceUrl),
+              url: sourceUrl,
+              content: sourceUrl
+            },
+            { title: "Transcript", favicon: null, content: sourceContent }
+          ];
+        } else {
           sections = [
             {
               title: sourceUrl ? new URL(sourceUrl).hostname : "Source",
-                                      favicon: getFaviconUrl(sourceUrl),
-                                      url: sourceUrl,
-                                      content: `Full URL: ${sourceUrl}\n\n${sourceContent || sourceUrl}`
+              favicon: getFaviconUrl(sourceUrl),
+              url: sourceUrl,
+              content: `Full URL: ${sourceUrl}\n\n${sourceContent || sourceUrl}`
             }
           ];
         }
@@ -955,7 +916,7 @@ function addBubble(text, type = "bot", hasSources = false, sourceUrl = "", sourc
             pdfIcon.className = "fas fa-file-pdf";
             pdfIcon.style.fontSize = "14px";
             summary.appendChild(pdfIcon);
-          } else if (metadata && sourceUrl.includes("youtube.com")) {
+          } else if (metadata && metadata.fromYouTube) {
             const ytIcon = document.createElement("i");
             ytIcon.className = "fab fa-youtube";
             ytIcon.style.fontSize = "14px";
@@ -990,10 +951,7 @@ function addBubble(text, type = "bot", hasSources = false, sourceUrl = "", sourc
           contentDiv.style.color = "var(--text)";
           contentDiv.style.whiteSpace = "pre-wrap";
           contentDiv.innerHTML = sanitizeAndRenderMarkdown(sec.content);
-
-          // NEW: Highlight code blocks in modal content (if any)
           highlightCodeBlocks(contentDiv);
-
           details.appendChild(contentDiv);
           modalContentEl.appendChild(details);
         });
@@ -1022,18 +980,38 @@ function addBubble(text, type = "bot", hasSources = false, sourceUrl = "", sourc
   return { wrapper, bubble, textContainer, controls };
 }
 
-function setSending(isSending) { sendBtn.disabled = isSending; inputEl.disabled = isSending; }
+function setSending(isSending) {
+  sendBtn.disabled = isSending;
+  inputEl.disabled = isSending;
+  if (isSending) {
+    sendBtn.classList.add("stop");
+    sendBtn.querySelector(".send-icon").style.display = "none";
+    sendBtn.querySelector(".stop-icon").style.display = "inline";
+    sendBtn.setAttribute("aria-label", "Stop generation");
+  } else {
+    sendBtn.classList.remove("stop");
+    sendBtn.querySelector(".send-icon").style.display = "inline";
+    sendBtn.querySelector(".stop-icon").style.display = "none";
+    sendBtn.setAttribute("aria-label", "Send message");
+  }
+}
 
+inputEl.addEventListener("keydown", (e) => {
+  if (e.key === "Enter" && !e.shiftKey) {
+    e.preventDefault();
+    sendMessage();
+  }
+});
 
-
-inputEl.addEventListener("keydown", (e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } });
 sendBtn.addEventListener("click", () => sendMessage(false));
+
 modalOverlay.addEventListener("click", () => {
   modalEl.classList.remove("active");
   modalOverlay.classList.remove("active");
   settingsModal.classList.remove("active");
   imageModal.classList.remove("active");
 });
+
 function formatWebsearchResponse(data) {
   if (data.error) {
     return `⚠️ Error: ${data.error}`;
@@ -1050,7 +1028,6 @@ function formatWebsearchResponse(data) {
           markdown += `- **Result ${idx + 1}**: [Invalid URL](${result.site})\n`;
         }
         markdown += `  ${result.summary || "No summary available."}\n`;
-        // Add images if available
         if (result.images && Array.isArray(result.images) && result.images.length > 0) {
           markdown += `  **Images**:\n`;
           result.images.forEach((img, imgIdx) => {
@@ -1075,20 +1052,13 @@ function formatWebsearchResponse(data) {
   markdown += `\n**Source**: SearxNG Web Search`;
   return markdown;
 }
+
 function formatWeatherResponse(data) {
   if (data.error) {
     return `⚠️ Weather Error: ${data.error}`;
   }
 
-  const {
-    city,          // rename snake_case to JS variable
-    timezone,
-    current,
-    forecast,
-      uv,
-      air_quality,
-      source
-  } = data;
+  const { city, timezone, current, forecast, uv, air_quality, source } = data;
 
   let markdown = `### Weather in ${city || "Unknown"} (${timezone || "N/A"})\n`;
 
@@ -1136,7 +1106,6 @@ function formatWeatherResponse(data) {
   }
 
   markdown += `**Source**: [${source}](https://open-meteo.com/)`;
-
   return markdown;
 }
 
@@ -1161,7 +1130,6 @@ function formatNewsResponse(data) {
           markdown += `- **Article ${idx + 1}**: [Invalid URL](${article.site})\n`;
         }
         markdown += `  ${article.summary || "No summary available."}\n`;
-        // Add images if available
         if (article.images && article.images.length > 0) {
           markdown += `  **Images**:\n`;
           article.images.forEach((img, imgIdx) => {
@@ -1185,27 +1153,10 @@ function formatNewsResponse(data) {
   }
 
   markdown += `**Source**: SearxNG News Search`;
-
   return markdown;
 }
 
 let abortController = null;
-
-function setSending(isSending) {
-  sendBtn.disabled = false;
-  inputEl.disabled = isSending;
-  if (isSending) {
-    sendBtn.classList.add("stop");
-    sendBtn.querySelector(".send-icon").style.display = "none";
-    sendBtn.querySelector(".stop-icon").style.display = "inline";
-    sendBtn.setAttribute("aria-label", "Stop generation");
-  } else {
-    sendBtn.classList.remove("stop");
-    sendBtn.querySelector(".send-icon").style.display = "inline";
-    sendBtn.querySelector(".stop-icon").style.display = "none";
-    sendBtn.setAttribute("aria-label", "Send message");
-  }
-}
 
 async function sendMessage(isRetry = false) {
   const text = (inputEl.value || "").trim();
@@ -1217,7 +1168,6 @@ async function sendMessage(isRetry = false) {
   let pdfSourceContent = "";
   let pdfMetadata = null;
 
-  // Handle PDF context if present
   if (pendingPdf && !isRetry) {
     displayText = `**~${pendingPdf.filename}**\n\n${text}`;
     pdfSourceUrl = pendingPdf.filename;
@@ -1225,7 +1175,6 @@ async function sendMessage(isRetry = false) {
     pdfMetadata = { fromPDF: true };
   }
 
-  // Add user message bubble
   if (isRetry) {
     const lastUserMessageIndex = [...currentChat].reverse().findIndex(m => m.role === "user");
     if (lastUserMessageIndex !== -1) {
@@ -1237,21 +1186,17 @@ async function sendMessage(isRetry = false) {
     currentChat.push({ role: "user", content: text, id: messageId });
   }
 
-  // Clear input and set sending state
   inputEl.value = "";
   inputEl.placeholder = pendingPdf ? `Ask about ${pendingPdf.filename}...` : "Ask anything...";
   setSending(true);
 
-  // Add thinking bubble
   const thinkingBubble = addBubble("Thinking", "thinking");
 
-  // Clear pending PDF after processing
   if (pendingPdf && !isRetry) {
     pendingPdf = null;
     currentChat = currentChat.filter(m => m.role !== "system");
   }
 
-  // Set up abort controller for stopping the request
   abortController = new AbortController();
 
   const originalSendHandler = () => sendMessage(false);
@@ -1279,14 +1224,12 @@ async function sendMessage(isRetry = false) {
     const youtubeId = detectedUrl ? extractYouTubeId(detectedUrl) : null;
     let embedUrl = youtubeId ? `https://www.youtube.com/embed/${youtubeId}` : "";
 
-    // Regular expressions for weather and news queries
     const weatherRegex = /(?:weather|forecast|whather|wheather)\s+(?:in|at|for)\s+([\w\s]+)/i;
     const weatherMatch = text.match(weatherRegex);
     const newsRegex = /news\s+(?:about|on|in|regarding)\s+([\w\s]+)/i;
     const newsMatch = text.match(newsRegex);
 
     if (weatherMatch) {
-      // Handle weather queries (unchanged)
       const city = weatherMatch[1].trim();
       const weatherBubble = addBubble("Searching weather...", "bot");
       let weatherText = "";
@@ -1295,7 +1238,7 @@ async function sendMessage(isRetry = false) {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ city }),
-                                       signal: abortController.signal
+          signal: abortController.signal
         });
         const weatherData = await weatherRes.json();
 
@@ -1332,7 +1275,6 @@ async function sendMessage(isRetry = false) {
         try { weatherBubble.wrapper.remove(); } catch (e) {}
       }
     } else if (newsMatch) {
-      // Handle news queries (unchanged)
       const topic = newsMatch[1].trim();
       const newsBubble = addBubble("Searching News...", "bot");
       let newsText = "";
@@ -1341,7 +1283,7 @@ async function sendMessage(isRetry = false) {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ query: topic }),
-                                    signal: abortController.signal
+          signal: abortController.signal
         });
         const newsData = await newsRes.json();
 
@@ -1352,7 +1294,6 @@ async function sendMessage(isRetry = false) {
           return;
         }
 
-        // Validate articles
         if (!newsData.articles || !Array.isArray(newsData.articles)) {
           newsBubble.wrapper.remove();
           thinkingBubble.wrapper.remove();
@@ -1360,7 +1301,6 @@ async function sendMessage(isRetry = false) {
           return;
         }
 
-        // Aggregate images from all articles
         images = newsData.articles.reduce((acc, article) => {
           if (article.images && Array.isArray(article.images)) {
             return [...acc, ...article.images];
@@ -1394,18 +1334,16 @@ async function sendMessage(isRetry = false) {
         try { newsBubble.wrapper.remove(); } catch (e) {}
       }
     } else if (websearchEnabled && !detectedUrl) {
-      // Handle websearch queries
       const searchBubble = addBubble("Searching...", "bot");
       try {
         const searchRes = await fetch(WEBSEARCH_ENDPOINT, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ query: text }),
-                                      signal: abortController.signal
+          signal: abortController.signal
         });
         let searchData = await searchRes.json();
         if (searchRes.ok && Array.isArray(searchData) && searchData.length > 0) {
-          // Aggregate images from all search results
           images = searchData.reduce((acc, result) => {
             if (result.images && Array.isArray(result.images)) {
               return [...acc, ...result.images];
@@ -1435,14 +1373,20 @@ async function sendMessage(isRetry = false) {
         try { searchBubble.wrapper.remove(); } catch (e) {}
       }
     } else if (detectedUrl) {
-      // Handle URL crawl queries (unchanged)
       const crawlBubble = addBubble("Searching...", "bot");
       try {
-        const crawlRes = await fetch(CRAWL_ENDPOINT, {
+        let endpoint = CRAWL_ENDPOINT;
+        let isYouTube = false;
+        if (detectedUrl.includes("youtube.com/watch?v=") || detectedUrl.includes("youtu.be/")) {
+          endpoint = YOUTUBE_ENDPOINT;
+          isYouTube = true;
+        }
+
+        const crawlRes = await fetch(endpoint, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ query: detectedUrl }),
-                                     signal: abortController.signal
+          signal: abortController.signal
         });
         let crawlData = await crawlRes.json();
         console.log("Crawl response:", crawlData);
@@ -1453,27 +1397,37 @@ async function sendMessage(isRetry = false) {
           images = crawlData.images || [];
           console.log("Images extracted:", images);
           augmentedMessages = [
-  ...currentChat.slice(0, -1),
-  {
-    role: "system",
-    content: systemPrompts.crawl
-      .replace("{content}", crawledText)
-      .replace("{metadata}", JSON.stringify(metadata))  // Add this line
-  },
-  currentChat[currentChat.length - 1]
-];
+            ...currentChat.slice(0, -1),
+            {
+              role: "system",
+              content: isYouTube
+                ? systemPrompts.youtube.replace("{content}", crawledText).replace("{metadata}", JSON.stringify(metadata))
+                : systemPrompts.crawl.replace("{content}", crawledText).replace("{metadata}", JSON.stringify(metadata))
+            },
+            currentChat[currentChat.length - 1]
+          ];
+          if (isYouTube && metadata) {
+            metadata.fromYouTube = true;
+          }
+        } else {
+          throw new Error(crawlData.error || "No content returned from crawl");
         }
       } catch (err) {
         if (err.name === "AbortError") {
           return;
         }
         console.error("Crawl error:", err?.message || err);
+        crawlBubble.wrapper.remove();
+        thinkingBubble.wrapper.remove();
+        addBubble(`⚠️ Crawl Error: ${err.message || "Failed to crawl URL"}`, "bot");
+        setSending(false);
+        inputEl.focus();
+        return;
       } finally {
         try { crawlBubble.wrapper.remove(); } catch (e) {}
       }
     }
 
-    // Determine source information
     const hasSources = !!(crawledText || sourceUrl || (pdfSourceUrl && pdfSourceContent));
     const finalSourceUrl = pdfSourceUrl || sourceUrl;
     const finalSourceContent = pdfSourceContent || crawledText;
@@ -1481,7 +1435,6 @@ async function sendMessage(isRetry = false) {
 
     let botBubble = null;
 
-    // Stream response from LM Studio
     const streamResponse = await fetch(LM_ENDPOINT, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -1521,19 +1474,14 @@ async function sendMessage(isRetry = false) {
             a.setAttribute("target", "_blank");
             a.setAttribute("rel", "noopener noreferrer");
           });
-
-          // NEW: Highlight code blocks during streaming (only new ones)
           highlightCodeBlocks(botBubble.textContainer);
-
           addPreCopyButtons(botBubble.bubble);
-          // MODIFIED: Conditional scroll during streaming
           if (autoScroll) scrollToBottom();
         }
       }
       if (!chunk && botBubble) {
         currentChat.push({ role: "assistant", content: accumulatedText, id: botBubble.wrapper.dataset.messageId });
         addPreCopyButtons(botBubble.bubble);
-        // Add images at the bottom after model finishes typing
         if (images && images.length > 0 && !youtubeId) {
           const imageContainer = document.createElement("div");
           imageContainer.className = "image-container";
@@ -1542,7 +1490,7 @@ async function sendMessage(isRetry = false) {
             img.src = src;
             img.alt = finalMetadata && finalMetadata.fromWebSearch ? "Thumbnail from web search result" : finalMetadata && finalMetadata.fromNews ? "Thumbnail from news article" : "Thumbnail from crawled page";
             img.className = "image-thumbnail";
-            img.setAttribute("loading", "lazy"); // Lazy-load images
+            img.setAttribute("loading", "lazy");
             img.addEventListener("click", () => {
               expandedImage.src = src;
               imageModal.classList.add("active");
@@ -1554,7 +1502,6 @@ async function sendMessage(isRetry = false) {
             imageContainer.appendChild(img);
           });
           botBubble.bubble.appendChild(imageContainer);
-
         }
       }
       if (!chunk && !botBubble) {
@@ -1606,7 +1553,6 @@ async function sendMessage(isRetry = false) {
     abortController = null;
   }
 }
-
 
 const modelBtn = document.getElementById("modelBtn");
 const modelList = document.getElementById("modelList");
@@ -1687,7 +1633,6 @@ loadSettings();
 const messages = document.querySelector('.messages');
 const scrollBtn = document.getElementById('scrollBtn');
 
-// MODIFIED: Updated checkScroll to use messagesEl (consistent with rest of code)
 function checkScroll() {
   if (messagesEl.scrollTop + messagesEl.clientHeight < messagesEl.scrollHeight - 1) {
     scrollBtn.style.display = 'flex';
@@ -1696,7 +1641,6 @@ function checkScroll() {
   }
 }
 
-// NEW: Scroll event listener to manage autoScroll flag
 messagesEl.addEventListener('scroll', () => {
   const isAtBottom = messagesEl.scrollTop + messagesEl.clientHeight >= messagesEl.scrollHeight - 1;
   autoScroll = isAtBottom;
@@ -1704,7 +1648,6 @@ messagesEl.addEventListener('scroll', () => {
 });
 
 scrollBtn.addEventListener("click", () => {
-  // Force scroll to bottom and re-enable autoScroll
   autoScroll = true;
   messagesEl.scrollTo({ top: messagesEl.scrollHeight, behavior: "smooth" });
 });
