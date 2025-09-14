@@ -135,5 +135,4 @@ This Project is designed for local use only. Do not expose your LM Studio server
 ---
 ## Contributing
 
-Contributions, bug reports, and feature requests are welcome.
-Please open an issue or submit a pull request.
+This is a personal project. Although the code is publicly available for learning and use, I am not accepting pull requests for new features or bug fixes. If you encounter an issue or have a suggestion, please open an issue to discuss it. Any pull requests submitted will be automatically closed.
