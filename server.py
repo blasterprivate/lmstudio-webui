@@ -583,15 +583,25 @@ def get_youtube_metadata(video_id: str) -> dict:
             ydl_opts = {"skip_download": True, "quiet": True}
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 info = ydl.extract_info(url, download=False)
-            meta = {"title": info.get("title"), "channel_name": info.get("uploader")}
+            meta = {
+                "title": info.get("title"),
+                "channel_name": info.get("uploader"),
+                "language": info.get("language", "Unknown"),
+                "is_generated": False
+            }
         except Exception:
             yt = YouTube(url)
-            meta = {"title": yt.title, "channel_name": yt.author}
+            meta = {
+                "title": yt.title,
+                "channel_name": yt.author,
+                "language": "Unknown",
+                "is_generated": False
+            }
         _METADATA_CACHE[video_id] = meta
         _save_cache("metadata", _METADATA_CACHE)
         return meta
     except Exception as e:
-        return {"title": None, "channel_name": None, "error": str(e)}
+        return {"title": None, "channel_name": None, "language": "Unknown", "is_generated": False, "error": str(e)}
 # ---------------- News & Websearch ----------------
 def extract_news_links(query: str, searxng_url=SEARXNG_URL, max_pages=3):
     results, seen = [], set()
@@ -641,7 +651,6 @@ def is_allowed_domain(url: str) -> bool:
     except Exception as e:
         logging.warning(f"Failed to parse domain for {url}: {e}")
         return False
-
 def get_valid_urls(candidates, min_words=100, target_count=max_sources, include_images=False):
     """
     Returns a list of valid URLs ensuring one article per domain.
@@ -769,10 +778,20 @@ def crawl():
     if not query.startswith(("http://","https://")):
         query = f"https://{query}"
     try:
+        # Check if the URL is a YouTube link
         if "youtube.com/watch?v=" in query or "youtu.be/" in query:
-            return jsonify(fetch_youtube_content(query))
-        else:
-            return jsonify(fetch_and_clean_webpage(query, include_images=True))
+            return jsonify({"error": "Use /youtube endpoint for YouTube URLs"}), 400
+        return jsonify(fetch_and_clean_webpage(query, include_images=True))
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+@app.route("/youtube", methods=["POST"])
+def youtube():
+    data = request.get_json()
+    query = data.get("query")
+    if not query:
+        return jsonify({"error": "No query provided"}), 400
+    try:
+        return jsonify(fetch_youtube_content(query))
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 @app.route("/news", methods=["POST"])
@@ -799,7 +818,7 @@ def websearch():
 def weather():
     data = request.get_json()
     city = data.get("city")
-    if not city:  # Changed 'query' to 'city'
+    if not city:
         return jsonify({"error": "No city provided"}), 400
     try:
         return jsonify(weather_assistant(city))
