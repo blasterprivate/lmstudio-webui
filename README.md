@@ -33,7 +33,7 @@ Ask for current conditions, forecasts, air quality, or UV index.
 - `weather at Paris`
 - `weather in New York tomorrow`
 
-### 🌐 Web Search (Text & Images)
+### 🌐 Web Search
 Search the web or images using your local SearXNG instance.  
 **Examples:**
 - `search for latest AI breakthroughs`
