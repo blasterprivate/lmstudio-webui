@@ -1,8 +1,8 @@
 # lmstudio-webui
 
-- This is an experimental WebUI chat alternative that works with LM Studio.
+*  This is an **unofficial** project and is not affiliated with or endorsed by LM Studio.
 
-- This is an unofficial project and is not affiliated with or endorsed by LM Studio.
+*  This is an experimental WebUI chat alternative that works with LM Studio.
   
 ![Alt text](screenshots/screen1.png)
 
@@ -130,6 +130,8 @@ Upload PDFs in the interface to extract text.
 This Project is designed for local use only. Do not expose your LM Studio server or Backend server to the public internet without proper security measures.
 
 ---
+
+
 ## Contributing
 
 This is a personal project. Although the code is publicly available for learning and use, I am not accepting pull requests for new features or bug fixes. If you encounter an issue or have a suggestion, please open an issue to discuss it. Any pull requests submitted will be automatically closed.
