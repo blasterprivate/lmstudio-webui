@@ -45,7 +45,7 @@ Get recent news about a topic.
 Search the web or images using your local SearXNG instance.
 
 **Examples:**
-- `search for latest AI breakthroughs`
+- `search for Michael Jordan`
 
 ### Single URL Extraction
 Extract information from a specific URL.
