@@ -207,6 +207,7 @@ html, body {
   padding: 6px 8px !important;           /* tighter padding */
   max-width: 100% !important;            /* never overflow parent */
   box-sizing: border-box;
+  border-radius: 8px;
 }
 
 .bubble-text code {
