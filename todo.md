@@ -1,0 +1,17 @@
+1. **Develop Main System Prompt:**
+
+   * Create a primary system prompt that allows other tool prompts to remain smaller in token size, optimizing token usage when multiple tools are called.
+
+2. **Implement Chat History Management:**
+
+   * Store chat history in a JSON file, including all contextual information such as web searches, news, YouTube references, and other relevant data.
+
+3. **Add Settings UI for Model Parameters:**
+
+   * Introduce a settings button next to the model selector that allows adjustments for:
+
+     * Temperature
+     * Top-k sampling
+     * Top-p sampling
+     * Minimum probability sampling
+     * Repeat penalty
