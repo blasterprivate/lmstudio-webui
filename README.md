@@ -25,40 +25,45 @@
 
 This WebUI integrates several tools directly into the chat.  
 You activate them simply by writing prompts in plain English — no special commands or syntax required.  
-Below are examples:
+Below are examples of how to use each tool.
 
 ### Weather
-Ask for current conditions, forecasts, air quality, or UV index.  
+Ask for current conditions, forecasts, air quality, or UV index.
+
 **Examples:**
 - `weather at Paris`
 - `weather in New York tomorrow`
 
-### Web Search
-Search the web or images using your local SearXNG instance.  
-**Examples:**
-- `search for latest AI breakthroughs`
-
 ### News
-Get recent news about a topic.  
+Get recent news about a topic.
+
 **Examples:**
 - `news about AI`
 - `latest news about space exploration`
 
+### Web Search
+Search the web or images using your local SearXNG instance.
+
+**Examples:**
+- `search for latest AI breakthroughs`
+
 ### Single URL Extraction
-Extract information from a specific URL.  
+Extract information from a specific URL.
+
 **Example:**
 - `summarize https://example.com/article`
 
 ### YouTube Transcripts
-Pull the transcript of a YouTube video.  
+Retrieve the transcript of a YouTube video.
+
 **Examples:**
 - `transcript of https://www.youtube.com/watch?v=dQw4w9WgXcQ`
-- `get YouTube transcript for this video link`
-
+- `summarise of https://www.youtube.com/watch?v=dQw4w9WgXcQ`
 ### PDF Extraction
-Upload PDFs in the interface to extract text.  
-**Example:**
-- Upload a PDF file → then prompt:
+Upload PDFs in the interface to extract text.
+
+**Examples:**
+- After uploading a PDF file, prompt:
   - `summarize the uploaded PDF`
   - `extract key points from the PDF`
 
