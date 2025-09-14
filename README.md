@@ -1,7 +1,9 @@
 # lmstudio-webui
-- this is experimental webui-chat alternative works with lm Studio
-- ive made this ui because i didnt like openwebui(in term of websearch and other tools)
-- it was easier for me to insert the tools(weather, websearch, etc...) content inside the user tasks
+- This is an experimental WebUI chat alternative that works with LM Studio.
+
+- I created this UI because I didn’t like OpenWebUI (in terms of web search and other tools).
+
+- It was easier(and faster) for me to integrate tools (weather, web search, etc.) directly into user prompts.
 ![Alt text](screenshots/screen1.png)
 ---
 
