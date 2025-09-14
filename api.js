@@ -292,19 +292,36 @@ function sanitizeAndRenderMarkdown(text) {
   const parser = new DOMParser();
   const doc = parser.parseFromString(clean, 'text/html');
 
+  // Add language class to <code> if missing
   doc.querySelectorAll('pre code').forEach(code => {
     if (![...code.classList].some(c => c.startsWith('language-'))) {
       const firstLine = code.textContent.split('\n')[0].toLowerCase();
-      let lang = 'text';
+      let lang = 'text'; // default
+
       if (firstLine.includes('css') || firstLine.includes('@media')) lang = 'css';
       else if (firstLine.includes('js') || firstLine.includes('javascript')) lang = 'javascript';
       else if (firstLine.includes('python') || firstLine.includes('def')) lang = 'python';
       else if (firstLine.includes('html') || firstLine.includes('<!doctype')) lang = 'markup';
+
       code.classList.add(`language-${lang}`);
     }
   });
 
   return doc.body.innerHTML;
+}
+
+// Highlight inserted code blocks
+function highlightCodeBlocks(container) {
+  if (typeof Prism === 'undefined') {
+    console.warn('Prism.js not loaded yet; skipping highlight.');
+    return;
+  }
+  container.querySelectorAll('pre code').forEach(el => {
+    if (!el.dataset.highlighted) {  // Avoid re-highlighting
+      Prism.highlightElement(el);
+      el.dataset.highlighted = 'true';
+    }
+  });
 }
 
 function extractUrl(text) {
