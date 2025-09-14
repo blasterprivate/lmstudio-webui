@@ -91,19 +91,32 @@ let systemPrompts = {
   Here are the relevant web search results:
   ----- WEB RESULTS START -----
   {search_data}
-  ----- WEB RESULTS END -----`,
+  ----- WEB RESULTS END -----
+
+  Your task:
+  - Parse the JSON web search data, which includes an array of results with site URLs, titles, summaries, and optional metadata
+  - Sort results by relevance or recency if metadata allows; otherwise, preserve the provided order.
+  - Provide a comprehensive summary of the search results in Markdown format, using:
+    - A ## Search Overview section with a concise summary (3-5 sentences) of key findings, trends, or insights, synthesizing information across results.
+    - A ## Search Results section as a Markdown list or table, including for each result:
+      - Source hostname (e.g., "example.com").
+      - A brief summary (2-3 sentences) of the result’s main points, key facts, or notable details.
+      - A link to the source URL.
+  - Synthesize information to highlight trends, key insights, or significant findings, ensuring balance and neutrality.
+  - If no valid results are available, politely explain and offer to provide general knowledge or retry the search.
+  - Use a clear, engaging, and neutral tone suitable for a general audience.`,
 
   crawl: `You are an AI assistant tasked with summarizing webpage content to provide a rich, clear, and engaging experience.
 
-Here is the content from the provided URL:
------ SITE CONTENT START -----
-{content}
------ SITE CONTENT END -----
+  Here is the content from the provided URL:
+  ----- SITE CONTENT START -----
+  {content}
+  ----- SITE CONTENT END -----
 
-Additional metadata (if available):
------ METADATA START -----
-{metadata}
------ METADATA END -----`,
+  Additional metadata (if available):
+  ----- METADATA START -----
+  {metadata}
+  ----- METADATA END -----`,
 
   pdf: `You are an AI assistant with access to the text of an uploaded PDF document.
 
@@ -142,32 +155,29 @@ Additional metadata (if available):
   Add a link to the source (e.g., Title).
   If multiple articles are highly similar (e.g., covering the same event with overlapping details), group them into a single table row with a combined summary that synthesizes their shared and unique insights, listing all sources and links together to avoid redundancy while maintaining completeness.
 
-
   If metadata (e.g., publication date, meta description) is available, integrate it naturally (e.g., "Published on [date]").
-
-
   Synthesize information across articles to highlight trends, differing perspectives, or significant developments in the overview and summaries, emphasizing balance and neutrality.
   If no articles or valid data are available, provide a polite explanation, offer to search again, or provide general information based on your knowledge.
   Use a clear, neutral, and engaging tone suitable for news reporting, ensuring accessibility for a general audience while maintaining depth and elegance in summaries.`,
 
   youtube: `You are an AI assistant tasked with summarizing YouTube video transcripts to provide a clear and engaging response.
 
-Here is the transcript from the YouTube video:
------ VIDEO TRANSCRIPT START -----
-{content}
------ VIDEO TRANSCRIPT END -----
+  Here is the transcript from the YouTube video:
+  ----- VIDEO TRANSCRIPT START -----
+  {content}
+  ----- VIDEO TRANSCRIPT END -----
 
-Additional metadata:
------ METADATA START -----
-{metadata}
------ METADATA END -----
+  Additional metadata:
+  ----- METADATA START -----
+  {metadata}
+  ----- METADATA END -----
 
-Your task:
-- Summarize the video content in a concise, engaging manner using Markdown format.
-- Include key points, main topics, or notable quotes from the transcript.
-- Reference the metadata (e.g., video title, channel) where relevant.
-- If the transcript is incomplete or irrelevant, note this politely and offer general insights.
-- Use a friendly and conversational tone.`
+  Your task:
+  - Summarize the video content in a concise, engaging manner using Markdown format.
+  - Include key points, main topics, or notable quotes from the transcript.
+  - Reference the metadata (e.g., video title, channel) where relevant.
+  - If the transcript is incomplete or irrelevant, note this politely and offer general insights.
+  - Use a friendly and conversational tone.`
 };
 
 async function loadSettings() {
@@ -469,7 +479,6 @@ function createBubbleElement(markdownText = "", type = "bot", hasSources = false
   textContainer.innerHTML = sanitizeAndRenderMarkdown(markdownText || "");
 
   highlightCodeBlocks(textContainer);
-
   bubble.appendChild(textContainer);
   addPreCopyButtons(bubble);
 
@@ -1139,7 +1148,7 @@ function formatNewsResponse(data) {
       } else {
         markdown += `- **Article ${idx + 1}**: No URL available\n`;
         markdown += `  ${article.summary || "No summary available."}\n`;
-        if (article.images && article.images.length > 0) {
+        if (article.images && Array.isArray(article.images) && article.images.length > 0) {
           markdown += `  **Images**:\n`;
           article.images.forEach((img, imgIdx) => {
             markdown += `  - ![Image ${imgIdx + 1}](${img})\n`;
@@ -1228,6 +1237,8 @@ async function sendMessage(isRetry = false) {
     const weatherMatch = text.match(weatherRegex);
     const newsRegex = /news\s+(?:about|on|in|regarding)\s+([\w\s]+)/i;
     const newsMatch = text.match(newsRegex);
+    const searchRegex = /search\s+(?:for|about)\s+([\w\s]+)/i;
+    const searchMatch = text.match(searchRegex);
 
     if (weatherMatch) {
       const city = weatherMatch[1].trim();
@@ -1332,6 +1343,65 @@ async function sendMessage(isRetry = false) {
         return;
       } finally {
         try { newsBubble.wrapper.remove(); } catch (e) {}
+      }
+    } else if (searchMatch) {
+      const query = searchMatch[1].trim();
+      const searchBubble = addBubble("Searching...", "bot");
+      let searchText = "";
+      try {
+        const searchRes = await fetch(WEBSEARCH_ENDPOINT, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ query }),
+          signal: abortController.signal
+        });
+        const searchData = await searchRes.json();
+
+        if (searchData.error) {
+          searchBubble.wrapper.remove();
+          thinkingBubble.wrapper.remove();
+          addBubble(`⚠️ Search Error: ${searchData.error}`, "bot");
+          return;
+        }
+
+        if (!Array.isArray(searchData)) {
+          searchBubble.wrapper.remove();
+          thinkingBubble.wrapper.remove();
+          addBubble(`⚠️ Search Error: Invalid or empty search data`, "bot");
+          return;
+        }
+
+        images = searchData.reduce((acc, result) => {
+          if (result.images && Array.isArray(result.images)) {
+            return [...acc, ...result.images];
+          }
+          return acc;
+        }, []);
+
+        searchText = formatWebsearchResponse(searchData);
+        augmentedMessages = [
+          ...currentChat.slice(0, -1),
+          {
+            role: "system",
+            content: systemPrompts.websearch.replace("{search_data}", JSON.stringify(searchData))
+          },
+          currentChat[currentChat.length - 1]
+        ];
+        sourceUrl = "SearxNG Web Search";
+        crawledText = JSON.stringify(searchData);
+        metadata = { fromWebSearch: true, resultCount: searchData.length };
+      } catch (err) {
+        if (err.name === "AbortError") {
+          return;
+        }
+        searchBubble.wrapper.remove();
+        thinkingBubble.wrapper.remove();
+        addBubble(`⚠️ Search Error: ${err.message}`, "bot");
+        setSending(false);
+        inputEl.focus();
+        return;
+      } finally {
+        try { searchBubble.wrapper.remove(); } catch (e) {}
       }
     } else if (websearchEnabled && !detectedUrl) {
       const searchBubble = addBubble("Searching...", "bot");
