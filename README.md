@@ -5,6 +5,8 @@
 - I created this UI because I didn’t like OpenWebUI (in terms of web search and other tools).
 
 - It was easier(and faster) for me to integrate tools (weather, web search, etc.) directly into user prompts.
+
+- This is an unofficial project and is not affiliated with or endorsed by LM Studio.
 ![Alt text](screenshots/screen1.png)
 
 ---
