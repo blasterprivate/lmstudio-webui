@@ -1,20 +1,23 @@
 # lmstudio-webui
+
 - This is an experimental WebUI chat alternative that works with LM Studio.
 
 - I created this UI because I didn’t like OpenWebUI (in terms of web search and other tools).
 
 - It was easier(and faster) for me to integrate tools (weather, web search, etc.) directly into user prompts.
 ![Alt text](screenshots/screen1.png)
+
 ---
 
 ## Features
 
-- **Streaming Chat** – Receive responses from LM Studio’s API at `http://localhost:1234`.
-- **Web Search** – Perform text and image searches using a local SearXNG instance.
-- **YouTube Transcripts** – Extract transcript text from YouTube videos (supports multiple languages).
-- **PDF Extraction** – Upload PDFs and extract their text for use in the ui.
-- **Weather Data** – Get forecasts, air quality, and UV index from Open-Meteo.
-- **Custom Prompts** – Edit system prompts directly in the settings.
+* **Streaming Chat** – Receive responses from LM Studio’s API at `http://localhost:1234`.
+* **Web Search** – Perform text and image searches using a local SearXNG instance.
+* **Single URL** – Open or process a single, user-provided URL for data extraction or preview.
+* **YouTube Transcripts** – Extract transcript text from YouTube videos (supports multiple languages).
+* **PDF Extraction** – Upload PDFs and extract their text for use in the UI.
+* **Weather Data** – Get forecasts, air quality, and UV index from Open-Meteo.
+* **Custom Prompts** – Edit system prompts directly in the settings.
 
 ---
 
