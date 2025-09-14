@@ -15,3 +15,9 @@
      * Top-p sampling
      * Minimum probability sampling
      * Repeat penalty
+
+4. **Update Fetch Logic for URLs in Scripts/Examples:**
+
+   * Modify the system to detect URLs embedded in code snippets or examples.
+   * Skip fetching or processing these URLs to avoid unnecessary requests or errors.
+   * Ensure that only “live” URLs outside code blocks are fetched.
