@@ -13,7 +13,7 @@
 
 * **Streaming Chat** – Receive responses from LM Studio’s API at `http://localhost:1234`.
 * **Web Search** – Perform text and image searches using a local SearXNG instance.
-* **Single URL** – Open or process a single, user-provided URL for data extraction or preview.
+* **Single URL** – Process a single, user-provided URL for data extraction.
 * **YouTube Transcripts** – Extract transcript text from YouTube videos (supports multiple languages).
 * **PDF Extraction** – Upload PDFs and extract their text for use in the UI.
 * **Weather Data** – Get forecasts, air quality, and UV index from Open-Meteo.
