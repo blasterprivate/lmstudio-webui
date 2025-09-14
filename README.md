@@ -21,6 +21,49 @@
 
 ---
 
+## Using the Built-in Tools
+
+This WebUI integrates several tools directly into the chat.  
+You activate them simply by writing prompts in plain English — no special commands or syntax required.  
+Below are examples:
+
+### 🌦 Weather
+Ask for current conditions, forecasts, air quality, or UV index.  
+**Examples:**
+- `weather at Paris`
+- `weather in New York tomorrow`
+
+### 🌐 Web Search (Text & Images)
+Search the web or images using your local SearXNG instance.  
+**Examples:**
+- `search for latest AI breakthroughs`
+
+### 📰 News
+Get recent news about a topic.  
+**Examples:**
+- `news about AI`
+- `latest news about space exploration`
+
+### 📄 Single URL Extraction
+Extract information from a specific URL.  
+**Example:**
+- `summarize https://example.com/article`
+
+### 🎥 YouTube Transcripts
+Pull the transcript of a YouTube video.  
+**Examples:**
+- `transcript of https://www.youtube.com/watch?v=dQw4w9WgXcQ`
+- `get YouTube transcript for this video link`
+
+### 📑 PDF Extraction
+Upload PDFs in the interface to extract text.  
+**Example:**
+- Upload a PDF file → then prompt:
+  - `summarize the uploaded PDF`
+  - `extract key points from the PDF`
+
+---
+
 ## Requirements
 
 - **LM Studio** API enabled at `http://localhost:1234/v1` (CORS enabled)
