@@ -127,7 +127,11 @@ python -m http.server 8000
 Then open `http://localhost:8000` in your browser.
 
 ---
+## Security
 
+This Project is designed for local use only. Do not expose your LM Studio server or Backend server to the public internet without proper security measures in place.
+
+---
 ## Contributing
 
 Contributions, bug reports, and feature requests are welcome.
