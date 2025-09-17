@@ -68,7 +68,7 @@ BLOCKED_TLDS = [
     ".tw", ".ua", ".uy", ".uz", ".ve", ".vn", ".ye", ".za", ".zm", ".zw"
 ]
 SEARXNG_URL = "http://127.0.0.1:8888/search"
-max_sources = 10
+max_sources = 15
 MAX_LOGO_WIDTH = 150
 MAX_LOGO_HEIGHT = 150
 REQUEST_TIMEOUT = 5
