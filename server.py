@@ -22,11 +22,7 @@ import io
 from io import BytesIO
 from PIL import Image
 from concurrent.futures import ThreadPoolExecutor, as_completed
-
-# Constants
-# cached directory of youtube and weather(weather per city is holded 1h)
 CACHE_DIR = Path("./webui_cache/")
-# avoid getting blocked
 USER_AGENTS = [
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36",
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.1 Safari/605.1.15",
@@ -34,71 +30,33 @@ USER_AGENTS = [
     "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36",
     "Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Mobile/15E148 Safari/604.1",
 ]
-# youtube transcripts that would work based on languages i picked
 TOP_LANGUAGES = ['en', 'iw', 'ar', 'es', 'fr', 'ru']
-# useless sites for llm websearch
 BLACKLISTED_DOMAINS = {
-    # Base mainstream platforms
     "facebook.com", "x.com", "twitter.com", "instagram.com",
     "youtube.com", "tiktok.com", "snapchat.com", "reddit.com",
     "linkedin.com", "discord.com", "pinterest.com", "telegram.org",
     "whatsapp.com", "tumblr.com", "twitch.tv", "yahoo.com",
-    # Video streaming & meme/content platforms
     "netflix.com", "hulu.com", "vimeo.com", "dailymotion.com",
     "bilibili.com", "peertube.tv", "rumble.com", "triller.co",
-    "clashapp.co",
-    # Messaging / hybrid social
-    "wechat.com", "line.me", "kakao.com", "viber.com",
-    "signal.org", "messenger.com",
-    # Regional social platforms
-    "ok.ru", "vk.ru", "weibo.com", "douyin.com",
-    "baidu.tieba.com", "xiaohongshu.com", "kuaishou.com",
-    "mixi.jp", "renren.com", "cyworld.com",
-    # Creative & niche social
-    "deviantart.com", "dribbble.com", "behance.net",
-    "medium.com", "soundcloud.com", "bandcamp.com",
-    "goodreads.com", "last.fm", "wattpad.com",
-    # Photo / short video sharing
-    "flickr.com", "vsco.co", "500px.com", "smugmug.com",
-    # Dating / social networking
-    "tinder.com", "bumble.com", "okcupid.com", "match.com",
-    "hinge.co", "grindr.com", "plentyoffish.com", "zoosk.com",
-    # Emerging / alternative networks
-    "mastodon.social", "pleroma.social", "gab.com", "truthsocial.com",
-    "gettr.com", "parler.com", "blueskyweb.xyz", "post.news",
-    "cohost.org", "ello.co", "mewe.com", "minds.com",
-    # Microblogging / forums-as-social
-    "quora.com", "4chan.org", "8kun.top", "kbin.social",
-    "lemmy.ml",
-    # Smaller lifestyle / community sites
-    "couchsurfing.com", "nextdoor.com", "gaiaonline.com",
-    "secondlife.com",
-    # Niche social / chat / gaming
-    "houseparty.com", "yolo.com", "crazygames.com", "miniclip.com",
-    "addictinggames.com", "pogo.com", "omegle.com", "chatroulette.com",
-    "tinychat.com",
-    # CDNs, analytics, media subdomains (from Covenant Eyes list)
-    "fbcdn.net", "fbstatic-a.akamaihd.net", "cdninstagram.com",
-    "licdn.com", "pinimg.com", "redditmedia.com", "quantcount.com",
-    "insightexpressai.com", "redditstatic.com", "moatads.com", "redd.it",
-    "tiktokcdn.com", "tiktokv.com", "byteoversea.com", "twimg.com",
-    "twtr.cm", "ytimg.com", "googlevideo.com", "youtu.be",
-    "youtube-nocookie.com", "vimeocdn.com",
-    # porn shit
-    "pornhub.com", "pornhub.org", "pornhub.xxx",
-    "xvideos.com", "xhamster.com", "redtube.com",
-    "youjizz.com", "tube8.com", "xnxx.com",
-    "spankbang.com", "youporn.com",
-    "chaturbate.com", "camsoda.com", "stripchat.com",
-    "bongacams.com", "myfreecams.com",
-    "onlyfans.com", "fansly.com", "adultfriendfinder.com",
-    "fetlife.com", "erome.com",
-    "javhd.com", "hclips.com", "porntrex.com",
-    "porn.com", "extremetube.com",
-    # useless news outlets(with context issues)
-    "aljazeera.com", "reuters.com", "wikinews.org"
+    "clashapp.co", "wechat.com", "line.me", "kakao.com", "viber.com",
+    "signal.org", "messenger.com", "ok.ru", "vk.ru", "weibo.com", "douyin.com",
+    "baidu.tieba.com", "xiaohongshu.com", "kuaishou.com", "mixi.jp", "renren.com", "cyworld.com",
+    "deviantart.com", "dribbble.com", "behance.net", "medium.com", "soundcloud.com", "bandcamp.com",
+    "goodreads.com", "last.fm", "wattpad.com", "flickr.com", "vsco.co", "500px.com", "smugmug.com",
+    "tinder.com", "bumble.com", "okcupid.com", "match.com", "hinge.co", "grindr.com", "plentyoffish.com", "zoosk.com",
+    "mastodon.social", "pleroma.social", "gab.com", "truthsocial.com", "gettr.com", "parler.com", "blueskyweb.xyz", "post.news",
+    "cohost.org", "ello.co", "mewe.com", "minds.com", "quora.com", "4chan.org", "8kun.top", "kbin.social", "lemmy.ml",
+    "couchsurfing.com", "nextdoor.com", "gaiaonline.com", "secondlife.com", "houseparty.com", "yolo.com", "crazygames.com",
+    "miniclip.com", "addictinggames.com", "pogo.com", "omegle.com", "chatroulette.com", "tinychat.com",
+    "fbcdn.net", "fbstatic-a.akamaihd.net", "cdninstagram.com", "licdn.com", "pinimg.com", "redditmedia.com",
+    "quantcount.com", "insightexpressai.com", "redditstatic.com", "moatads.com", "redd.it", "tiktokcdn.com",
+    "tiktokv.com", "byteoversea.com", "twimg.com", "twtr.cm", "ytimg.com", "googlevideo.com", "youtu.be",
+    "youtube-nocookie.com", "vimeocdn.com", "pornhub.com", "pornhub.org", "pornhub.xxx", "xvideos.com",
+    "xhamster.com", "redtube.com", "youjizz.com", "tube8.com", "xnxx.com", "spankbang.com", "youporn.com",
+    "chaturbate.com", "camsoda.com", "stripchat.com", "bongacams.com", "myfreecams.com", "onlyfans.com",
+    "fansly.com", "adultfriendfinder.com", "fetlife.com", "erome.com", "javhd.com", "hclips.com", "porntrex.com",
+    "porn.com", "extremetube.com", "aljazeera.com", "reuters.com", "wikinews.org"
 }
-# useless tlds for my use case and can confuse llm models when non english being loaded
 BLOCKED_TLDS = [
     ".ae", ".am", ".ao", ".ar", ".az", ".bd", ".bg", ".bh", ".bo", ".br", ".bt", ".by",
     ".cl", ".cn", ".cr", ".cz", ".de", ".dk", ".do", ".dz", ".ec", ".eg", ".es",
@@ -109,26 +67,19 @@ BLOCKED_TLDS = [
     ".ro", ".ru", ".sa", ".sd", ".se", ".sv", ".sy", ".th", ".tj", ".tm", ".tn", ".tr",
     ".tw", ".ua", ".uy", ".uz", ".ve", ".vn", ".ye", ".za", ".zm", ".zw"
 ]
-# local searxng server (make sure json enabled at settings.yml)
 SEARXNG_URL = "http://127.0.0.1:8888/search"
-# max sources based on my network speeds
 max_sources = 10
-# max image size to avoid useless images
 MAX_LOGO_WIDTH = 150
 MAX_LOGO_HEIGHT = 150
-# Timeout and Retry Settings (ive set it for lower timeout for faster searching and avoid bottleneck)
 REQUEST_TIMEOUT = 5
 IMAGE_TIMEOUT = 5
 WEATHER_TIMEOUT = 5
 SEARCH_TIMEOUT = 10
 MAX_RETRIES = 1
-# Logging Configuration
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-# Flask Setup
 SESSION = requests.Session()
 app = Flask(__name__)
-CORS(app)  # Allow all origins for local testing
-# Cache Initialization
+CORS(app)
 CACHE_DIR.mkdir(parents=True, exist_ok=True)
 _TRANSCRIPT_CACHE = {}
 _METADATA_CACHE = {}
@@ -170,7 +121,6 @@ def make_session():
     session.mount('http://', adapter)
     session.mount('https://', adapter)
     return session
-# ---------------- Weather Functions ----------------
 def weather_code_to_description(code: int) -> str:
     weather_codes = {
         0: "Clear sky",
@@ -194,10 +144,6 @@ def weather_code_to_description(code: int) -> str:
     }
     return weather_codes.get(code, "Unknown")
 def get_weather_emoji(code: int, current_time: datetime = None, sunrise: str = None, sunset: str = None) -> str:
-    """
-    Return weather emoji based on code and whether it's day or night.
-    sunrise/sunset are ISO strings, e.g., "2025-09-08T06:10"
-    """
     day_emojis = {
         0: "☀️", 1: "☀️", 2: "⛅", 3: "☁️",
         45: "🌫️", 48: "🌫️",
@@ -218,7 +164,6 @@ def get_weather_emoji(code: int, current_time: datetime = None, sunrise: str = N
         try:
             sunrise_dt = datetime.fromisoformat(sunrise)
             sunset_dt = datetime.fromisoformat(sunset)
-            # Determine day or night
             if sunrise_dt.time() <= current_time.time() <= sunset_dt.time():
                 return day_emojis.get(code, "")
             else:
@@ -266,17 +211,15 @@ def fetch_coordinates(city: str) -> tuple:
             return None, None, None, f"No coordinates found for {city}"
         lat = float(data[0]["lat"])
         lon = float(data[0]["lon"])
-        display_name = data[0].get("display_name", city)  # e.g., "Sderot, Southern District, Israel"
+        display_name = data[0].get("display_name", city)
         return lat, lon, display_name, None
     except Exception as e:
         return None, None, None, f"Failed to fetch coordinates: {str(e)}"
 def weather_assistant(city: str) -> dict:
     cache_key = f"{city}:{datetime.now().strftime('%Y-%m-%d')}"
-    # Check cache with 1-hour expiry
     cached = _WEATHER_CACHE.get(cache_key)
-    if cached and time.time() - cached["timestamp"] < 3600:  # 3600 seconds = 1 hour
+    if cached and time.time() - cached["timestamp"] < 3600:
         return cached["data"]
-    # Fetch coordinates
     lat, lon, display_name, error = fetch_coordinates(city)
     if error:
         return {"error": error}
@@ -306,11 +249,8 @@ def weather_assistant(city: str) -> dict:
         air_quality_data = air_resp.json()
         timezone = get_timezone_from_coords(lat, lon)
         city_time = datetime.now(pytz.timezone(timezone)).strftime("%Y-%m-%d %H:%M:%S %Z")
-        israel_tz = pytz.timezone("Asia/Jerusalem")
-        current_time_israel = datetime.now(israel_tz).strftime("%Y-%m-%d %H:%M:%S %Z")
-        # Get current time in the city's timezone
         current_time_obj = datetime.now(pytz.timezone(timezone))
-        current_hour = current_time_obj.hour  # Get the current hour (0-23)
+        current_hour = current_time_obj.hour
         current = {
             "temperature": round(weather_data["current"]["temperature_2m"], 1),
             "humidity": weather_data["current"]["relative_humidity_2m"],
@@ -320,7 +260,6 @@ def weather_assistant(city: str) -> dict:
             "sunrise": weather_data["daily"]["sunrise"][0],
             "sunset": weather_data["daily"]["sunset"][0],
         }
-        # Assign emoji based on day/night
         current["emoji"] = get_weather_emoji(
             current["weather_code"],
             current_time=current_time_obj,
@@ -362,14 +301,12 @@ def weather_assistant(city: str) -> dict:
             "city": city,
             "timezone": timezone,
             "city_time": city_time,
-            "current_time_israel": current_time_israel,
             "current": current,
             "forecast": forecast,
             "uv": uv,
             "air_quality": air_quality,
             "source": "Open-Meteo",
         }
-        # Store in cache with timestamp
         _WEATHER_CACHE[cache_key] = {
             "timestamp": time.time(),
             "data": response
@@ -378,9 +315,7 @@ def weather_assistant(city: str) -> dict:
         return response
     except Exception as e:
         return {"error": f"Failed to fetch weather data: {str(e)}"}
-# ---------------- Webpage Fetch & Clean ----------------
 def is_valid_image_size(url: str, min_width: int = 600, min_height: int = 400, headers=None) -> bool:
-    """Download image and check actual dimensions, with headers."""
     try:
         resp = requests.get(url, stream=True, timeout=IMAGE_TIMEOUT, headers=headers)
         resp.raise_for_status()
@@ -393,7 +328,6 @@ def is_valid_image_size(url: str, min_width: int = 600, min_height: int = 400, h
         logging.warning(f"Failed to validate image size for {url}: {str(e)}")
         return False
 def safe_to_int(value, default=0):
-    """Safely convert a value to an integer, handling percentages and invalid inputs."""
     if not value:
         return default
     try:
@@ -508,7 +442,7 @@ def fetch_and_clean_webpage(url: str, chunk_size: int = 30000, min_words: int = 
     return {"site": url, "images": image_urls, "content": main_text[:chunk_size], "title": title, "meta_description": meta_desc}
 def summarize_webpage(urls, max_words=500, target_count=max_sources, min_words=100, include_images=True, max_images=10):
     summaries = []
-    total_images = 0  # Track total images across all URLs
+    total_images = 0
     with ThreadPoolExecutor(max_workers=10) as executor:
         future_to_url = {
             executor.submit(fetch_and_clean_webpage, url, min_words=min_words, include_images=include_images): url
@@ -523,12 +457,11 @@ def summarize_webpage(urls, max_words=500, target_count=max_sources, min_words=1
             if not data.get("content"):
                 continue
             sentences = re.split(r'(?<=[.!?])\s+', data["content"])[:10]
-            # Limit images for this URL based on remaining global quota
             if include_images and total_images < max_images:
                 images = data.get("images", [])[:max_images - total_images]
                 total_images += len(images)
             else:
-                images = []  # No more images allowed
+                images = []
             summary_data = {
                 "site": data["site"],
                 "summary": ' '.join(sentences),
@@ -540,7 +473,6 @@ def summarize_webpage(urls, max_words=500, target_count=max_sources, min_words=1
             if len(summaries) >= target_count:
                 break
     return _safe_json_dumps(summaries)
-# ---------------- YouTube ----------------
 def fetch_youtube_content(video_url_or_id: str) -> dict:
     vid = _extract_video_id(video_url_or_id)
     transcript_data = get_youtube_transcript(vid)
@@ -602,7 +534,6 @@ def get_youtube_metadata(video_id: str) -> dict:
         return meta
     except Exception as e:
         return {"title": None, "channel_name": None, "language": "Unknown", "is_generated": False, "error": str(e)}
-# ---------------- News & Websearch ----------------
 def extract_news_links(query: str, searxng_url=SEARXNG_URL, max_pages=3):
     results, seen = [], set()
     session = make_session()
@@ -629,46 +560,33 @@ def extract_news_links(query: str, searxng_url=SEARXNG_URL, max_pages=3):
             results.append({"site": url, "title": r.get("title"), "snippet": r.get("content") or r.get("snippet")})
     return results
 def is_allowed_domain(url: str) -> bool:
-    """
-    Returns True if the URL's domain is not blacklisted or in a restricted TLD.
-    """
     try:
         domain = urlparse(url).netloc.lower()
-        # Normalize to main domain (strip subdomains)
         domain = ".".join(domain.split('.')[-2:])
-
-        # Block specific blacklisted domains
         if domain in BLACKLISTED_DOMAINS:
             logging.info(f"Blocked blacklisted domain: {domain}")
             return False
-
-        # 🔒 Block by TLD
         if any(domain.endswith(tld) for tld in BLOCKED_TLDS):
             logging.info(f"Blocked restricted TLD: {domain}")
             return False
-
         return True
     except Exception as e:
         logging.warning(f"Failed to parse domain for {url}: {e}")
         return False
 def get_valid_urls(candidates, min_words=100, target_count=max_sources, include_images=False):
-    """
-    Returns a list of valid URLs ensuring one article per domain.
-    """
     valid_urls = []
     used_domains = set()
-    # Normalize candidates by domain first
     domain_to_candidate = {}
     for c in candidates:
         url = c.get("site")
         if not url:
-            continue  # skip candidates with no URL
+            continue
         domain = urlparse(url).netloc.lower()
-        domain = ".".join(domain.split('.')[-2:])  # get main domain
+        domain = ".".join(domain.split('.')[-2:])
         if domain in used_domains or domain in domain_to_candidate:
-            continue  # skip duplicates
+            continue
         if not is_allowed_domain(url):
-            continue  # skip blacklisted domains
+            continue
         domain_to_candidate[domain] = c
     def process_url(candidate):
         url = candidate.get("site")
@@ -732,7 +650,6 @@ def websearch_assistant(topic: str):
     valid_urls = get_valid_urls(results, min_words=100, target_count=max_sources, include_images=True)
     summaries = json.loads(summarize_webpage(valid_urls, target_count=max_sources, min_words=100, include_images=True))
     return _safe_json_dumps(summaries)
-# ---------------- PDF Endpoint ----------------
 @app.route("/pdf", methods=["POST"])
 def pdf():
     try:
@@ -768,7 +685,6 @@ def pdf():
     except Exception as e:
         logging.error(f"PDF endpoint error: {str(e)}")
         return jsonify({"error": str(e)}), 500
-# ---------------- Flask Endpoints ----------------
 @app.route("/crawl", methods=["POST"])
 def crawl():
     data = request.get_json()
@@ -778,7 +694,6 @@ def crawl():
     if not query.startswith(("http://","https://")):
         query = f"https://{query}"
     try:
-        # Check if the URL is a YouTube link
         if "youtube.com/watch?v=" in query or "youtu.be/" in query:
             return jsonify({"error": "Use /youtube endpoint for YouTube URLs"}), 400
         return jsonify(fetch_and_clean_webpage(query, include_images=True))
