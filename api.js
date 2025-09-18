@@ -575,6 +575,12 @@ function addBubble(text, type = "bot", hasSources = false, sourceUrl = "", sourc
   }
   messagesEl.appendChild(wrapper);
 
+  // Update token count for user or bot messages
+if (type === "user" || type === "bot" || type === "system") {
+  currentContextLength = calculateChatTokens();
+  updateProgressBar(currentContextLength, maxContextLength);
+}
+
   const isThinking = type === "thinking";
   const isSearchingBubble = typeof text === "string" && (text.toLowerCase().includes("searching") || text.toLowerCase().includes("thinking"));
 
@@ -727,7 +733,7 @@ if (type === "bot") {
 
         // Remove the bot message and any subsequent messages
         if (botMessageIndex !== -1) {
-            currentChat.splice(botMessageIndex, currentChat.length - botMessageIndex);
+            currentChat.splice(botMessageIndex, 1);
         }
 
         // Remove the bot message from the UI
@@ -1013,9 +1019,6 @@ if (type === "bot") {
     if (!wrapper.dataset.messageId) {
     wrapper.dataset.messageId = `msg-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
     }
-    if (type !== "thinking" && type !== "searching") {
-    currentChat.push({ role: type === "user" ? "user" : "assistant", content: text, id: wrapper.dataset.messageId });
-    }
   }
 
   addPreCopyButtons(bubble);
@@ -1223,9 +1226,6 @@ async function sendMessage(isRetry = false) {
     if (lastUserMessageIndex !== -1) {
       messageId = currentChat[currentChat.length - 1 - lastUserMessageIndex].id;
       displayText = currentChat[currentChat.length - 1 - lastUserMessageIndex].content;
-      // Preserve any existing system prompts
-      const systemMessages = currentChat.filter(m => m.role === "system");
-      console.log("Preserving system messages for retry:", systemMessages);
     } else {
       console.warn("No user message found for retry");
       addBubble("⚠️ Error: No user message found for retry.", "bot");
@@ -1247,9 +1247,14 @@ async function sendMessage(isRetry = false) {
   const thinkingBubble = addBubble("Thinking", "thinking");
 
   if (pendingPdf && !isRetry) {
-    pendingPdf = null;
+    const systemPrompt = `You are an AI assistant with access to the following PDF document:\n\n----- PDF CONTENT START -----\n${pendingPdf.text}\n----- PDF CONTENT END -----\n\nYour task:\n- Answer questions strictly based on this document.\n- Provide detailed explanations and well-structured responses.\n- Include relevant sections or quotes when needed.\n- If asked something outside the PDF, politely say you don’t know.`;
     currentChat = currentChat.filter(m => m.role !== "system");
-    console.log("Cleared pendingPdf and system messages for new message");
+    const systemMessage = { role: "system", content: systemPrompt, id: `system-${Date.now()}` };
+    currentChat.push(systemMessage);
+    currentContextLength = calculateChatTokens();
+    updateProgressBar(currentContextLength, maxContextLength);
+    console.log("Added PDF system message to currentChat:", JSON.stringify(currentChat, null, 2));
+    pendingPdf = null;
   }
 
   abortController = new AbortController();
@@ -1269,7 +1274,6 @@ async function sendMessage(isRetry = false) {
     }
   };
   sendBtn.addEventListener("click", stopHandler);
-
 
   try {
     let augmentedMessages = [...currentChat];
@@ -1309,21 +1313,31 @@ async function sendMessage(isRetry = false) {
         }
 
         weatherText = formatWeatherResponse(weatherData);
+        const systemMessage = {
+          role: "system",
+          content: systemPrompts.weather.replace("{weather_data}", weatherText),
+          id: `system-${Date.now()}`
+        };
+        currentChat = [
+          ...currentChat.slice(0, -1),
+          systemMessage,
+          currentChat[currentChat.length - 1]
+        ];
         augmentedMessages = [
           ...currentChat.slice(0, -1),
-          {
-            role: "system",
-            content: systemPrompts.weather.replace("{weather_data}", weatherText)
-          },
+          systemMessage,
           currentChat[currentChat.length - 1]
         ];
         sourceUrl = "https://open-meteo.com/";
         crawledText = weatherText;
         metadata = { fromWeather: true };
+        currentContextLength = calculateChatTokens();
+        updateProgressBar(currentContextLength, maxContextLength);
+        console.log("currentChat after adding system message:", JSON.stringify(currentChat, null, 2));
+        console.log("augmentedMessages:", JSON.stringify(augmentedMessages, null, 2));
+        console.log("Estimated tokens:", calculateChatTokens());
       } catch (err) {
-        if (err.name === "AbortError") {
-          return;
-        }
+        if (err.name === "AbortError") return;
         weatherBubble.wrapper.remove();
         thinkingBubble.wrapper.remove();
         addBubble(`⚠️ Weather Error: ${err.message}`, "bot");
@@ -1368,21 +1382,29 @@ async function sendMessage(isRetry = false) {
         }, []);
 
         newsText = formatNewsResponse(newsData);
+        const systemMessage = {
+          role: "system",
+          content: systemPrompts.news.replace("{news_data}", JSON.stringify(newsData)),
+          id: `system-${Date.now()}`
+        };
+        currentChat = [
+          ...currentChat.slice(0, -1),
+          systemMessage,
+          currentChat[currentChat.length - 1]
+        ];
         augmentedMessages = [
           ...currentChat.slice(0, -1),
-          {
-            role: "system",
-            content: systemPrompts.news.replace("{news_data}", JSON.stringify(newsData))
-          },
+          systemMessage,
           currentChat[currentChat.length - 1]
         ];
         sourceUrl = "SearxNG News Search";
         crawledText = JSON.stringify(newsData);
         metadata = { fromNews: true };
+        currentContextLength = calculateChatTokens();
+        updateProgressBar(currentContextLength, maxContextLength);
+        console.log("currentChat after adding news system message:", JSON.stringify(currentChat, null, 2));
       } catch (err) {
-        if (err.name === "AbortError") {
-          return;
-        }
+        if (err.name === "AbortError") return;
         newsBubble.wrapper.remove();
         thinkingBubble.wrapper.remove();
         addBubble(`⚠️ News Error: ${err.message}`, "bot");
@@ -1427,21 +1449,29 @@ async function sendMessage(isRetry = false) {
         }, []);
 
         searchText = formatWebsearchResponse(searchData);
+        const systemMessage = {
+          role: "system",
+          content: systemPrompts.websearch.replace("{search_data}", JSON.stringify(searchData)),
+          id: `system-${Date.now()}`
+        };
+        currentChat = [
+          ...currentChat.slice(0, -1),
+          systemMessage,
+          currentChat[currentChat.length - 1]
+        ];
         augmentedMessages = [
           ...currentChat.slice(0, -1),
-          {
-            role: "system",
-            content: systemPrompts.websearch.replace("{search_data}", JSON.stringify(searchData))
-          },
+          systemMessage,
           currentChat[currentChat.length - 1]
         ];
         sourceUrl = "SearxNG Web Search";
         crawledText = JSON.stringify(searchData);
         metadata = { fromWebSearch: true, resultCount: searchData.length };
+        currentContextLength = calculateChatTokens();
+        updateProgressBar(currentContextLength, maxContextLength);
+        console.log("currentChat after adding websearch system message:", JSON.stringify(currentChat, null, 2));
       } catch (err) {
-        if (err.name === "AbortError") {
-          return;
-        }
+        if (err.name === "AbortError") return;
         searchBubble.wrapper.remove();
         thinkingBubble.wrapper.remove();
         addBubble(`⚠️ Search Error: ${err.message}`, "bot");
@@ -1470,22 +1500,30 @@ async function sendMessage(isRetry = false) {
           }, []);
 
           const searchContext = formatWebsearchResponse(searchData);
-          crawledText = JSON.stringify(searchData);
-          sourceUrl = "Web search results";
-          metadata = { fromWebSearch: true, resultCount: searchData.length };
-          augmentedMessages = [
+          const systemMessage = {
+            role: "system",
+            content: systemPrompts.websearch.replace("{search_data}", searchContext),
+            id: `system-${Date.now()}`
+          };
+          currentChat = [
             ...currentChat.slice(0, -1),
-            {
-              role: "system",
-              content: systemPrompts.websearch.replace("{search_data}", searchContext)
-            },
+            systemMessage,
             currentChat[currentChat.length - 1]
           ];
+          augmentedMessages = [
+            ...currentChat.slice(0, -1),
+            systemMessage,
+            currentChat[currentChat.length - 1]
+          ];
+          sourceUrl = "SearxNG Web Search";
+          crawledText = JSON.stringify(searchData);
+          metadata = { fromWebSearch: true, resultCount: searchData.length };
+          currentContextLength = calculateChatTokens();
+          updateProgressBar(currentContextLength, maxContextLength);
+          console.log("currentChat after adding implicit websearch system message:", JSON.stringify(currentChat, null, 2));
         }
       } catch (err) {
-        if (err.name === "AbortError") {
-          return;
-        }
+        if (err.name === "AbortError") return;
         console.error("Websearch error:", err?.message || err);
       } finally {
         try { searchBubble.wrapper.remove(); } catch (e) {}
@@ -1514,26 +1552,34 @@ async function sendMessage(isRetry = false) {
           metadata = crawlData.metadata || null;
           images = crawlData.images || [];
           console.log("Images extracted:", images);
+          const systemMessage = {
+            role: "system",
+            content: isYouTube
+              ? systemPrompts.youtube.replace("{content}", crawledText).replace("{metadata}", JSON.stringify(metadata))
+              : systemPrompts.crawl.replace("{content}", crawledText).replace("{metadata}", JSON.stringify(metadata)),
+            id: `system-${Date.now()}`
+          };
+          currentChat = [
+            ...currentChat.slice(0, -1),
+            systemMessage,
+            currentChat[currentChat.length - 1]
+          ];
           augmentedMessages = [
             ...currentChat.slice(0, -1),
-            {
-              role: "system",
-              content: isYouTube
-                ? systemPrompts.youtube.replace("{content}", crawledText).replace("{metadata}", JSON.stringify(metadata))
-                : systemPrompts.crawl.replace("{content}", crawledText).replace("{metadata}", JSON.stringify(metadata))
-            },
+            systemMessage,
             currentChat[currentChat.length - 1]
           ];
           if (isYouTube && metadata) {
             metadata.fromYouTube = true;
           }
+          currentContextLength = calculateChatTokens();
+          updateProgressBar(currentContextLength, maxContextLength);
+          console.log("currentChat after adding crawl/youtube system message:", JSON.stringify(currentChat, null, 2));
         } else {
           throw new Error(crawlData.error || "No content returned from crawl");
         }
       } catch (err) {
-        if (err.name === "AbortError") {
-          return;
-        }
+        if (err.name === "AbortError") return;
         console.error("Crawl error:", err?.message || err);
         crawlBubble.wrapper.remove();
         thinkingBubble.wrapper.remove();
@@ -1574,7 +1620,6 @@ async function sendMessage(isRetry = false) {
       return;
     }
 
-
     const reader = streamResponse.body.getReader();
     const decoder = new TextDecoder();
     let accumulatedText = "";
@@ -1600,6 +1645,8 @@ async function sendMessage(isRetry = false) {
       }
       if (!chunk && botBubble) {
         currentChat.push({ role: "assistant", content: accumulatedText, id: botBubble.wrapper.dataset.messageId });
+        currentContextLength = calculateChatTokens();
+        updateProgressBar(currentContextLength, maxContextLength);
         addPreCopyButtons(botBubble.bubble);
         if (images && images.length > 0 && !youtubeId) {
           const imageContainer = document.createElement("div");
@@ -1677,11 +1724,10 @@ async function sendMessage(isRetry = false) {
   } finally {
     setSending(false);
     inputEl.focus();
-    sendBtn.removeEventListener("click", debouncedStopHandler);
+    sendBtn.removeEventListener("click", stopHandler);
     sendBtn.addEventListener("click", originalSendHandler);
-    console.log("Reattached original send handler");
     abortController = null;
-    pendingPdf = null; // Ensure PDF state is cleared
+    pendingPdf = null;
   }
 }
 
@@ -1689,10 +1735,36 @@ const modelBtn = document.getElementById("modelBtn");
 const modelList = document.getElementById("modelList");
 
 let currentModel = LM_MODEL;
+let currentContextLength = 0; // Track current token usage
+let maxContextLength = 0; // Track configured context length from LM Studio
 
+// Simple token estimation function (approximate: 1 token ~ 0.75 words)
+function estimateTokens(text) {
+  if (!text) return 0;
+  const words = text.trim().split(/\s+/).length;
+  return Math.ceil(words / 0.75); // Rough estimate: 1 token ≈ 0.75 words
+}
+
+// Update progress bar with current and max context length
+function updateProgressBar(currentTokens, maxTokens) {
+  const progressEl = document.getElementById("context-progress");
+  const labelEl = document.getElementById("context-label");
+  if (!progressEl || !labelEl) return;
+
+  const percentage = maxTokens > 0 ? (currentTokens / maxTokens) * 100 : 0;
+  progressEl.value = percentage;
+  labelEl.textContent = `${currentTokens} / ${maxTokens} tokens`;
+}
+
+// Calculate total tokens in currentChat
+function calculateChatTokens() {
+  return currentChat.reduce((total, message) => total + estimateTokens(message.content), 0);
+}
+
+// Modified fetchModels to use loaded_context_length as max
 async function fetchModels() {
   try {
-    const res = await fetch("http://localhost:1234/v1/models");
+    const res = await fetch("http://localhost:1234/api/v0/models");
     const data = await res.json();
     const models = data.data || [];
     modelList.innerHTML = "";
@@ -1703,17 +1775,32 @@ async function fetchModels() {
       li.style.cursor = "default";
       li.style.color = "var(--muted)";
       modelList.appendChild(li);
+      updateProgressBar(0, 0); // Reset progress bar
       return;
     }
 
+    // Find the loaded model, if any
+    let loadedModel = models.find(m => m.state === "loaded") || models[0];
+
+    // Set the current model and max context length to the loaded model (or first model if none loaded)
+    currentModel = loadedModel.id;
+    maxContextLength = loadedModel.loaded_context_length || 0;
+    currentContextLength = calculateChatTokens();
+    modelBtn.textContent = currentModel;
+    updateProgressBar(currentContextLength, maxContextLength);
+
+    // Populate the model list
     models.forEach(m => {
       const li = document.createElement("li");
       li.textContent = m.id;
       li.setAttribute("role", "option");
       li.setAttribute("aria-selected", m.id === currentModel);
       li.classList.toggle("active", m.id === currentModel);
+      li.dataset.loadedContextLength = m.loaded_context_length || 0;
       li.addEventListener("click", () => {
         currentModel = m.id;
+        maxContextLength = m.loaded_context_length || 0;
+        currentContextLength = calculateChatTokens();
         modelBtn.textContent = m.id;
         modelBtn.setAttribute("aria-expanded", "false");
         modelList.classList.remove("active");
@@ -1723,20 +1810,17 @@ async function fetchModels() {
         });
         li.classList.add("active");
         li.setAttribute("aria-selected", "true");
+        updateProgressBar(currentContextLength, maxContextLength);
       });
       modelList.appendChild(li);
     });
 
-    if (!currentModel && models.length > 0) {
-      currentModel = models[0].id;
-    }
-    modelBtn.textContent = currentModel || "Select Model";
   } catch (err) {
     console.error("Failed to fetch models:", err);
     modelList.innerHTML = '<li style="color: var(--muted); cursor: default;">Error loading models</li>';
+    updateProgressBar(0, 0);
   }
 }
-
 modelBtn.addEventListener("click", (e) => {
   e.stopPropagation();
   const isExpanded = modelList.classList.toggle("active");
