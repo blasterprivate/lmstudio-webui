@@ -484,7 +484,56 @@ background: hwb(240 21% 77%);
   border-radius: 6px;
   color: #bbb;
 }
+/* Progress Bar inside Topbar */
+.model-progress-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  margin-left: 0; /* <— REMOVE THIS */
+}
 
+.model-progress-container progress {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 140px;            /* width of bar */
+  height: 8px;             /* bar height */
+  border-radius: 4px;
+  overflow: hidden;
+  background-color: var(--border);
+}
+
+/* Webkit progress bar styles */
+.model-progress-container progress::-webkit-progress-bar {
+  background-color: var(--border);
+  border-radius: 4px;
+}
+.model-progress-container progress::-webkit-progress-value {
+  background-color: var(--accent);
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+/* Firefox progress bar */
+.model-progress-container progress::-moz-progress-bar {
+  background-color: var(--accent);
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+/* Token label under bar */
+#context-label {
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.2;
+}
+.model-progress-container {
+  align-items: center; /* instead of flex-start */
+}
+#context-label {
+  text-align: center;
+  width: 100%;
+}
 .sources-wrapper-btn:hover {
   background-color: rgba(255, 255, 255, 0.2) !important;
 }
@@ -669,29 +718,81 @@ min-width: 600px;
   transform: scale(1.1);
 }
 
-.image-modal {
+/* Image Modal Styles */
+#imageModal.image-modal {
   position: fixed;
   top: 0;
   left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.8);
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.85) !important; /* Ensure black overlay */
   display: none;
   align-items: center;
   justify-content: center;
   z-index: 1000;
+  overflow: visible;
+  padding: 0;
 }
 
-.image-modal.active {
+#imageModal.image-modal.active {
   display: flex;
 }
 
-.image-modal img {
-  max-width: 90%;
-  max-height: 90%;
+#imageModal.image-modal img#expandedImage {
+  max-width: 95vw;
+  max-height: 95vh;
+  width: auto;
+  height: auto;
+  object-fit: contain;
   border-radius: 8px;
+  display: block;
+  margin: 0 auto;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+  position: relative;
+  transform: none;
+  z-index: 1001; /* Above modal background */
 }
 
+/* Override .modal for image-modal */
+.modal.image-modal {
+  max-width: none;
+  max-height: none;
+  width: 100vw;
+  height: 100vh;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  transform: none;
+  overflow: visible;
+  background: transparent !important; /* Prevent .modal background */
+}
+
+/* Close button */
+.image-modal .close-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: white;
+  font-size: 16px;
+  padding: 8px 12px;
+  border-radius: 50%;
+  cursor: pointer;
+  z-index: 1002; /* Above image */
+}
+
+.image-modal .close-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* Ensure modal-overlay works with image modal */
+.modal-overlay.active.image-modal-active {
+  display: block;
+  opacity: 1;
+  background: rgba(0, 0, 0, 0.7); /* Reinforce dark overlay */
+  z-index: 999;
+}
 .article-icons {
   display: flex;
   flex-direction: row;
