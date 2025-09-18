@@ -262,18 +262,6 @@ function scrollToBottom() {
   }
 }
 
-function highlightCodeBlocks(container) {
-  if (typeof Prism === 'undefined') {
-    console.warn('Prism.js not loaded yet; skipping highlight.');
-    return;
-  }
-  container.querySelectorAll('pre[class*="language-"]').forEach(el => {
-    if (!el.dataset.highlighted) {
-      Prism.highlightElement(el);
-      el.dataset.highlighted = 'true';
-    }
-  });
-}
 
 function sanitizeAndRenderMarkdown(text) {
   const rawHtml = marked.parse(text || "");
@@ -323,6 +311,7 @@ function highlightCodeBlocks(container) {
     }
   });
 }
+
 
 function extractUrl(text) {
   const urlRegex = /(https?:\/\/[^\s]+)/i;
@@ -564,6 +553,19 @@ function streamMessage(textContainer, thinkingBubble, onChunk, onComplete) {
   };
 }
 
+// Debounce function to prevent rapid clicks
+function debounce(func, wait) {
+  let timeout;
+  return function executedFunction(...args) {
+    const later = () => {
+      clearTimeout(timeout);
+      func(...args);
+    };
+    clearTimeout(timeout);
+    timeout = setTimeout(later, wait);
+  };
+}
+
 function addBubble(text, type = "bot", hasSources = false, sourceUrl = "", sourceContent = "", metadata = null, embedUrl = "", youtubeId = null, originalUrl = null, messageId = null, images = []) {
   const { wrapper, bubble, textContainer, controls } = createBubbleElement(text, type, hasSources, sourceUrl, sourceContent, metadata, embedUrl, youtubeId, originalUrl, images);
   if (messageId) {
@@ -693,54 +695,66 @@ function addBubble(text, type = "bot", hasSources = false, sourceUrl = "", sourc
       controls.appendChild(editBtn);
     }
 
-    if (type === "bot") {
-      const retryBtn = document.createElement("button");
-      retryBtn.className = "retry-btn";
-      retryBtn.innerHTML = '<i class="fas fa-rotate-right"></i>';
-      retryBtn.setAttribute("role", "button");
-      retryBtn.setAttribute("aria-label", "Retry last message");
-      retryBtn.addEventListener("click", async (e) => {
+if (type === "bot") {
+    const retryBtn = document.createElement("button");
+    retryBtn.className = "retry-btn";
+    retryBtn.innerHTML = '<i class="fas fa-rotate-right"></i>';
+    retryBtn.setAttribute("role", "button");
+    retryBtn.setAttribute("aria-label", "Retry last message");
+    retryBtn.addEventListener("click", async (e) => {
         e.stopPropagation();
         if (sendBtn.disabled) return;
 
         const botMessageId = wrapper.dataset.messageId;
         const botMessageIndex = currentChat.findIndex(m => m.role === "assistant" && m.id === botMessageId);
 
+        // Find the most recent user message before the bot message
         let userMessage = null;
         let userMessageId = null;
         for (let i = botMessageIndex - 1; i >= 0; i--) {
-          if (currentChat[i].role === "user") {
-            userMessage = currentChat[i];
-            userMessageId = currentChat[i].id;
-            break;
-          }
+            if (currentChat[i].role === "user") {
+                userMessage = currentChat[i];
+                userMessageId = currentChat[i].id;
+                break;
+            }
         }
 
-        if (!userMessage) return;
+        if (!userMessage) {
+            console.warn("No user message found for retry");
+            addBubble("⚠️ Error: No user message found for retry.", "bot");
+            return;
+        }
 
+        // Remove the bot message and any subsequent messages
         if (botMessageIndex !== -1) {
-          currentChat.splice(botMessageIndex, 1);
+            currentChat.splice(botMessageIndex, currentChat.length - botMessageIndex);
         }
 
+        // Remove the bot message from the UI
         wrapper.remove();
 
+        // Restore the user message in the UI if it was removed
         const userMessageElement = messagesEl.querySelector(`.msg-row.user[data-message-id="${userMessageId}"]`);
         if (userMessageElement) {
-          const textContainer = userMessageElement.querySelector(".bubble-text");
-          if (textContainer) {
-            textContainer.innerHTML = sanitizeAndRenderMarkdown(userMessage.content);
-            highlightCodeBlocks(textContainer);
-          }
+            const textContainer = userMessageElement.querySelector(".bubble-text");
+            if (textContainer) {
+                textContainer.innerHTML = sanitizeAndRenderMarkdown(userMessage.content);
+                highlightCodeBlocks(textContainer);
+            }
         } else {
-          const bubble = addBubble(userMessage.content, "user");
-          userMessage.id = bubble.wrapper.dataset.messageId;
+            const bubble = addBubble(userMessage.content, "user");
+            userMessage.id = bubble.wrapper.dataset.messageId;
         }
+
+        // Restore any system prompts that were part of the original context
+        const systemMessages = currentChat.filter(m => m.role === "system");
+        currentChat = [...systemMessages, userMessage];
 
         inputEl.value = userMessage.content;
         await sendMessage(true);
-      });
-      controls.appendChild(retryBtn);
-    }
+    });
+    controls.appendChild(retryBtn);
+}
 
     if (hasSources && sourceUrl && sourceContent) {
       const sourcesWrapper = document.createElement("button");
@@ -997,9 +1011,11 @@ function addBubble(text, type = "bot", hasSources = false, sourceUrl = "", sourc
     }
 
     if (!wrapper.dataset.messageId) {
-      wrapper.dataset.messageId = Date.now().toString();
+    wrapper.dataset.messageId = `msg-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
     }
-    currentChat.push({ role: "assistant", content: text, id: wrapper.dataset.messageId });
+    if (type !== "thinking" && type !== "searching") {
+    currentChat.push({ role: type === "user" ? "user" : "assistant", content: text, id: wrapper.dataset.messageId });
+    }
   }
 
   addPreCopyButtons(bubble);
@@ -1008,7 +1024,6 @@ function addBubble(text, type = "bot", hasSources = false, sourceUrl = "", sourc
 }
 
 function setSending(isSending) {
-  sendBtn.disabled = isSending;
   inputEl.disabled = isSending;
   if (isSending) {
     sendBtn.classList.add("stop");
@@ -1030,7 +1045,7 @@ inputEl.addEventListener("keydown", (e) => {
   }
 });
 
-sendBtn.addEventListener("click", () => sendMessage(false));
+sendBtn.addEventListener("click", debounce(() => sendMessage(false), 200));
 
 modalOverlay.addEventListener("click", () => {
   modalEl.classList.remove("active");
@@ -1203,14 +1218,26 @@ async function sendMessage(isRetry = false) {
   }
 
   if (isRetry) {
+    console.log("Processing retry, currentChat:", JSON.stringify(currentChat));
     const lastUserMessageIndex = [...currentChat].reverse().findIndex(m => m.role === "user");
     if (lastUserMessageIndex !== -1) {
       messageId = currentChat[currentChat.length - 1 - lastUserMessageIndex].id;
+      displayText = currentChat[currentChat.length - 1 - lastUserMessageIndex].content;
+      // Preserve any existing system prompts
+      const systemMessages = currentChat.filter(m => m.role === "system");
+      console.log("Preserving system messages for retry:", systemMessages);
+    } else {
+      console.warn("No user message found for retry");
+      addBubble("⚠️ Error: No user message found for retry.", "bot");
+      setSending(false);
+      inputEl.focus();
+      return;
     }
   } else {
     const bubble = addBubble(displayText, "user");
     messageId = bubble.wrapper.dataset.messageId;
     currentChat.push({ role: "user", content: text, id: messageId });
+    console.log("Added user message to currentChat:", { role: "user", content: text, id: messageId });
   }
 
   inputEl.value = "";
@@ -1222,12 +1249,14 @@ async function sendMessage(isRetry = false) {
   if (pendingPdf && !isRetry) {
     pendingPdf = null;
     currentChat = currentChat.filter(m => m.role !== "system");
+    console.log("Cleared pendingPdf and system messages for new message");
   }
 
   abortController = new AbortController();
 
   const originalSendHandler = () => sendMessage(false);
   sendBtn.removeEventListener("click", originalSendHandler);
+  console.log("Removed original send handler");
   const stopHandler = () => {
     if (abortController) {
       abortController.abort();
@@ -1240,6 +1269,7 @@ async function sendMessage(isRetry = false) {
     }
   };
   sendBtn.addEventListener("click", stopHandler);
+
 
   try {
     let augmentedMessages = [...currentChat];
@@ -1544,6 +1574,7 @@ async function sendMessage(isRetry = false) {
       return;
     }
 
+
     const reader = streamResponse.body.getReader();
     const decoder = new TextDecoder();
     let accumulatedText = "";
@@ -1552,7 +1583,7 @@ async function sendMessage(isRetry = false) {
       if (!botBubble && chunk && chunk.trim()) {
         botBubble = addBubble("", "bot", hasSources, finalSourceUrl, finalSourceContent, finalMetadata, embedUrl, youtubeId, detectedUrl, images);
         botBubble.wrapper.style.display = "block";
-        thinkingBubble.wrapper.remove();
+        try { thinkingBubble.wrapper.remove(); } catch (e) { console.warn("Error removing thinking bubble:", e); }
       }
       if (chunk) {
         accumulatedText += chunk;
@@ -1593,52 +1624,64 @@ async function sendMessage(isRetry = false) {
         }
       }
       if (!chunk && !botBubble) {
-        thinkingBubble.wrapper.remove();
+        try { thinkingBubble.wrapper.remove(); } catch (e) { console.warn("Error removing thinking bubble:", e); }
       }
     };
 
     let done = false;
     while (!done) {
-      const { value, done: streamDone } = await reader.read();
-      done = streamDone;
-      if (value) {
-        const chunk = decoder.decode(value, { stream: true });
-        const lines = chunk.split("\n");
-        for (const line of lines) {
-          if (line.startsWith("data: ")) {
-            const data = line.slice(6);
-            if (data === "[DONE]") {
-              done = true;
-              break;
-            }
-            try {
-              const parsed = JSON.parse(data);
-              const content = parsed.choices?.[0]?.delta?.content || "";
-              if (content) {
-                await handleStream(content);
+      try {
+        const { value, done: streamDone } = await reader.read();
+        done = streamDone;
+        if (value) {
+          const chunk = decoder.decode(value, { stream: true });
+          const lines = chunk.split("\n");
+          for (const line of lines) {
+            if (line.startsWith("data: ")) {
+              const data = line.slice(6);
+              if (data === "[DONE]") {
+                done = true;
+                break;
               }
-            } catch (e) {
-              console.error("Error parsing stream chunk:", e);
+              try {
+                const parsed = JSON.parse(data);
+                const content = parsed.choices?.[0]?.delta?.content || "";
+                if (content) {
+                  await handleStream(content);
+                }
+              } catch (e) {
+                console.error("Error parsing stream chunk:", e);
+              }
             }
           }
         }
+      } catch (err) {
+        if (err.name === "AbortError") {
+          console.log("Stream aborted");
+          return;
+        }
+        console.error("Stream error:", err);
+        break;
       }
     }
 
     await handleStream("");
   } catch (err) {
     if (err.name === "AbortError") {
+      console.log("Request aborted");
       return;
     }
     console.error("LM call error:", err?.message || err);
-    thinkingBubble.wrapper.remove();
+    try { thinkingBubble.wrapper.remove(); } catch (e) { console.warn("Error removing thinking bubble:", e); }
     addBubble("⚠️ Error: Could not reach LM Studio. Details: " + (err?.message || String(err)), "bot");
   } finally {
     setSending(false);
     inputEl.focus();
-    sendBtn.removeEventListener("click", stopHandler);
+    sendBtn.removeEventListener("click", debouncedStopHandler);
     sendBtn.addEventListener("click", originalSendHandler);
+    console.log("Reattached original send handler");
     abortController = null;
+    pendingPdf = null; // Ensure PDF state is cleared
   }
 }
 
