@@ -12,13 +12,14 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-css.min.js"></script> 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
-
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 <div class="app">
   <button id="scrollBtn" aria-label="Scroll to bottom">
-<svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="stroke-[2] -mb-0.5"><path d="M6 9L12 15L18 9" stroke="currentColor" stroke-linecap="square"></path></svg>
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="stroke-[2] -mb-0.5">
+      <path d="M6 9L12 15L18 9" stroke="currentColor" stroke-linecap="square"></path>
+    </svg>
   </button>
   <main class="main">
     <header class="topbar">
@@ -26,6 +27,10 @@
         <button id="modelBtn" class="model-btn" aria-expanded="false" aria-controls="modelList">
           Select Model <i class="fas fa-chevron-down" style="margin-left: 6px;"></i>
         </button>
+        <div class="model-progress-container">
+          <progress id="context-progress" value="0" max="100"></progress>
+          <div id="context-label"></div>
+        </div>
         <ul id="modelList" class="model-list" role="listbox" aria-label="Available models"></ul>
       </div>
     </header>
@@ -62,14 +67,13 @@
       <div id="settingsModal" class="modal">
         <div id="settingsModalContent" class="settings-modal-content"></div>
       </div>
-      <div id="imageModal" class="image-modal">
+      <div id="imageModal" class="modal image-modal">
         <img id="expandedImage" src="" alt="Expanded image" />
       </div>
     </footer>
   </main>
 </div>
 <script src="api.js"></script>
-
 <style>
   .star {
     position: fixed;
@@ -79,7 +83,6 @@
     animation: drift linear infinite;
     display: none; /* Initially hidden */
   }
-
   @keyframes drift {
     0% {
       transform: translateY(0) translateX(0);
@@ -128,24 +131,17 @@
   for (let i = 0; i < starCount; i++) {
     const star = document.createElement('div');
     star.className = 'star';
-
-    // Random initial position
     star.style.top = `${Math.random() * window.innerHeight}px`;
     star.style.left = `${Math.random() * window.innerWidth}px`;
-
-    // Random size (1-3px)
     const size = 1 + Math.random() * 2;
     star.style.width = `${size}px`;
     star.style.height = `${size}px`;
-
-    // Slower animation duration (60–120s)
     star.style.animationDuration = `${60 + Math.random() * 60}s`;
-
     document.body.appendChild(star);
   }
 
-  // Start the idle timer initially
+  // Start the idle timer
   resetIdleTimer();
 </script>
-
+</body>
 </html>
