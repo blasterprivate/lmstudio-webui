@@ -27,44 +27,47 @@ const expandedImage = document.getElementById("expandedImage");
 let autoScroll = true;
 
 if (window.DOMPurify) {
-  DOMPurify.addHook('afterSanitizeAttributes', function(node) {
-    if (node.tagName === 'A') {
-      if (!node.getAttribute('target')) node.setAttribute('target', '_blank');
-      node.setAttribute('rel', 'noopener noreferrer');
-    }
-  });
+    DOMPurify.addHook('afterSanitizeAttributes', function(node) {
+        if (node.tagName === 'A') {
+            if (!node.getAttribute('target')) node.setAttribute('target', '_blank');
+            node.setAttribute('rel', 'noopener noreferrer');
+        }
+    });
 }
 
 const anchorObserver = new MutationObserver(mutations => {
-  for (const m of mutations) {
-    for (const n of Array.from(m.addedNodes)) {
-      if (n.nodeType !== 1) continue;
-      if (n.tagName === 'A') {
-        if (!n.getAttribute('target')) n.setAttribute('target', '_blank');
-        n.setAttribute('rel', 'noopener noreferrer');
-      }
-      n.querySelectorAll && n.querySelectorAll('a').forEach(a => {
-        if (!a.getAttribute('target')) a.setAttribute('target', '_blank');
-        a.setAttribute('rel', 'noopener noreferrer');
-      });
+    for (const m of mutations) {
+        for (const n of Array.from(m.addedNodes)) {
+            if (n.nodeType !== 1) continue;
+            if (n.tagName === 'A') {
+                if (!n.getAttribute('target')) n.setAttribute('target', '_blank');
+                n.setAttribute('rel', 'noopener noreferrer');
+            }
+            n.querySelectorAll && n.querySelectorAll('a').forEach(a => {
+                if (!a.getAttribute('target')) a.setAttribute('target', '_blank');
+                a.setAttribute('rel', 'noopener noreferrer');
+            });
+        }
     }
-  }
 });
 
-anchorObserver.observe(messagesEl, { childList: true, subtree: true });
+anchorObserver.observe(messagesEl, {
+    childList: true,
+    subtree: true
+});
 
 youtubeToggleBtn.addEventListener("click", () => {
-  allowYouTubeEmbeds = !allowYouTubeEmbeds;
-  youtubeToggleBtn.classList.toggle("active", allowYouTubeEmbeds);
-  youtubeToggleBtn.title = allowYouTubeEmbeds ? "YouTube Embeds Enabled" : "YouTube Embeds Disabled";
+    allowYouTubeEmbeds = !allowYouTubeEmbeds;
+    youtubeToggleBtn.classList.toggle("active", allowYouTubeEmbeds);
+    youtubeToggleBtn.title = allowYouTubeEmbeds ? "YouTube Embeds Enabled" : "YouTube Embeds Disabled";
 });
 
 settingsBtn.addEventListener("click", () => {
-  openSettingsModal();
+    openSettingsModal();
 });
 
 let systemPrompts = {
-  weather: `You are a friendly, knowledgeable AI assistant specializing in weather updates, with access to weather data in JSON format.
+    weather: `You are a friendly, knowledgeable AI assistant specializing in weather updates, with access to weather data in JSON format.
 
 Here is the weather information for the user's query:
 ----- WEATHER DATA START -----
@@ -85,7 +88,7 @@ Your task:
 - Maintain a warm, conversational tone suitable for a general audience, avoiding technical jargon unless necessary.
 - Example tone: "Looks like a sunny day in Paris! 🇫🇷 Let's break down the forecast for you."`,
 
-  websearch: `You are a web-savvy AI assistant designed to deliver clear, accurate, and engaging summaries from recent web search results in JSON format.
+    websearch: `You are a web-savvy AI assistant designed to deliver clear, accurate, and engaging summaries from recent web search results in JSON format.
 
 Here are the relevant web search results:
 ----- WEB RESULTS START -----
@@ -123,7 +126,7 @@ Your task:
 
 Follow these guidelines precisely to ensure structured, accurate, and readable outputs.`,
 
-  crawl: `You are an AI assistant tasked with summarizing webpage content to provide a clear, engaging, and accurate response.
+    crawl: `You are an AI assistant tasked with summarizing webpage content to provide a clear, engaging, and accurate response.
 
 Here is the content from the provided URL:
 ----- SITE CONTENT START -----
@@ -140,7 +143,7 @@ Your task:
 - Use a friendly, professional tone suitable for a general audience, avoiding jargon unless contextually appropriate.
 - Example tone: "This webpage dives into [topic]—here’s a quick rundown of what it covers!"`,
 
-  pdf: `You are an AI assistant tasked with analyzing and summarizing the text of an uploaded PDF document to provide clear, accurate, and user-focused responses.
+    pdf: `You are an AI assistant tasked with analyzing and summarizing the text of an uploaded PDF document to provide clear, accurate, and user-focused responses.
 
 Here is the content of the PDF:
 ----- PDF CONTENT START -----
@@ -157,7 +160,7 @@ Your task:
 - If the PDF content is incomplete or unreadable, note this politely and provide any usable information or suggest alternatives.
 - Use a professional, helpful tone suitable for a general audience, ensuring clarity and structure.
 - Example tone: "This PDF covers [topic]—here’s a quick summary to get you up to speed!"`,
-code: `You are an AI assistant tasked with analyzing or modifying code provided by the user. The input may contain code snippets, including URLs or endpoints that should not be fetched but treated as part of the code. Your task is to:
+    code: `You are an AI assistant tasked with analyzing or modifying code provided by the user. The input may contain code snippets, including URLs or endpoints that should not be fetched but treated as part of the code. Your task is to:
 
 - Analyze the code if the user asks for analysis (e.g., explain functionality, identify bugs).
 - Modify the code if the user requests changes (e.g., refactor, fix errors).
@@ -171,7 +174,7 @@ Here is the user-provided code:
 \`\`\`
 
 Please proceed with the user's request.`,
-  news: `You are a news-savvy AI assistant designed to deliver clear, balanced, and engaging summaries based on recent news articles in JSON format.
+    news: `You are a news-savvy AI assistant designed to deliver clear, balanced, and engaging summaries based on recent news articles in JSON format.
 
 Here are the relevant news results:
 ----- NEWS RESULTS START -----
@@ -190,7 +193,7 @@ Your task:
 - Use a clear, neutral, and engaging tone suitable for news reporting, ensuring accessibility and depth for a general audience.
 - Example tone: "Here’s the latest on [query]—let’s break down the key stories!"`,
 
-  youtube: `You are an AI assistant tasked with summarizing YouTube video transcripts to provide clear, engaging, and accurate responses.
+    youtube: `You are an AI assistant tasked with summarizing YouTube video transcripts to provide clear, engaging, and accurate responses.
 
 Here is the transcript from the YouTube video:
 ----- VIDEO TRANSCRIPT START -----
@@ -214,38 +217,41 @@ Your task:
 };
 
 async function loadSettings() {
-  try {
-    const response = await fetch("settings.json");
-    if (response.ok) {
-      const data = await response.json();
-      systemPrompts = { ...systemPrompts, ...data };
+    try {
+        const response = await fetch("settings.json");
+        if (response.ok) {
+            const data = await response.json();
+            systemPrompts = {
+                ...systemPrompts,
+                ...data
+            };
+        }
+    } catch (err) {
+        console.warn("Could not load settings.json:", err.message);
     }
-  } catch (err) {
-    console.warn("Could not load settings.json:", err.message);
-  }
 }
 
 async function saveSettings() {
-  try {
-    console.log("Settings saved in memory:", JSON.stringify(systemPrompts, null, 2));
-    alert("Settings saved for this session (until reload).");
-  } catch (err) {
-    console.error("Error saving settings:", err.message);
-    alert("Failed to save settings: " + err.message);
-  }
+    try {
+        console.log("Settings saved in memory:", JSON.stringify(systemPrompts, null, 2));
+        alert("Settings saved for this session (until reload).");
+    } catch (err) {
+        console.error("Error saving settings:", err.message);
+        alert("Failed to save settings: " + err.message);
+    }
 }
 
 function isValidUrl(string) {
-  try {
-    new URL(string);
-    return true;
-  } catch (_) {
-    return false;
-  }
+    try {
+        new URL(string);
+        return true;
+    } catch (_) {
+        return false;
+    }
 }
 
 function openSettingsModal() {
-  settingsModalContent.innerHTML = `
+    settingsModalContent.innerHTML = `
   <h3 style="margin: 0 0 12px; color: var(--accent); font-weight: 600;">Edit System Prompts</h3>
   <label>Weather Prompt</label>
   <textarea id="weatherPrompt" class="settings-textarea">${systemPrompts.weather}</textarea>
@@ -266,1545 +272,1673 @@ function openSettingsModal() {
   <button id="cancelSettingsBtn" class="btn">Cancel</button>
   </div>
   `;
-  settingsModal.classList.add("active");
-  modalOverlay.classList.add("active");
+    settingsModal.classList.add("active");
+    modalOverlay.classList.add("active");
 
-  const saveBtn = document.getElementById("saveSettingsBtn");
-  const cancelBtn = document.getElementById("cancelSettingsBtn");
+    const saveBtn = document.getElementById("saveSettingsBtn");
+    const cancelBtn = document.getElementById("cancelSettingsBtn");
 
-  saveBtn.addEventListener("click", async () => {
-    systemPrompts.weather = document.getElementById("weatherPrompt").value.trim();
-    systemPrompts.websearch = document.getElementById("websearchPrompt").value.trim();
-    systemPrompts.crawl = document.getElementById("crawlPrompt").value.trim();
-    systemPrompts.youtube = document.getElementById("youtubePrompt").value.trim();
-    systemPrompts.pdf = document.getElementById("pdfPrompt").value.trim();
-    systemPrompts.news = document.getElementById("newsPrompt").value.trim();
-    systemPrompts.code = document.getElementById("codePrompt").value.trim();
-    await saveSettings();
-    settingsModal.classList.remove("active");
-    modalOverlay.classList.remove("active");
-  });
+    saveBtn.addEventListener("click", async () => {
+        systemPrompts.weather = document.getElementById("weatherPrompt").value.trim();
+        systemPrompts.websearch = document.getElementById("websearchPrompt").value.trim();
+        systemPrompts.crawl = document.getElementById("crawlPrompt").value.trim();
+        systemPrompts.youtube = document.getElementById("youtubePrompt").value.trim();
+        systemPrompts.pdf = document.getElementById("pdfPrompt").value.trim();
+        systemPrompts.news = document.getElementById("newsPrompt").value.trim();
+        systemPrompts.code = document.getElementById("codePrompt").value.trim();
+        await saveSettings();
+        settingsModal.classList.remove("active");
+        modalOverlay.classList.remove("active");
+    });
 
-  cancelBtn.addEventListener("click", () => {
-    settingsModal.classList.remove("active");
-    modalOverlay.classList.remove("active");
-  });
+    cancelBtn.addEventListener("click", () => {
+        settingsModal.classList.remove("active");
+        modalOverlay.classList.remove("active");
+    });
 }
 
 function scrollToBottom() {
-  if (autoScroll) {
-    messagesEl.scrollTop = messagesEl.scrollHeight;
-  }
+    if (autoScroll) {
+        messagesEl.scrollTop = messagesEl.scrollHeight;
+    }
 }
 
 
 function sanitizeAndRenderMarkdown(text) {
-  const rawHtml = marked.parse(text || "");
-  const clean = DOMPurify.sanitize(rawHtml, {
-    ALLOWED_TAGS: [
-      'b','strong','i','em','u','a','p','br','ul','ol','li','pre','code',
-      'table','thead','tbody','tr','th','td','span','div','h1','h2','h3','h4','h5','h6','iframe','details','summary','img',
-      'span'
-    ],
-    ALLOWED_ATTR: [
-      'href','target','rel','class','id','title','aria-hidden','aria-label','role','data-lang',
-      'src','width','height','frameborder','allow','allowfullscreen','style'
-    ]
-  });
+    const rawHtml = marked.parse(text || "");
+    const clean = DOMPurify.sanitize(rawHtml, {
+        ALLOWED_TAGS: [
+            'b', 'strong', 'i', 'em', 'u', 'a', 'p', 'br', 'ul', 'ol', 'li', 'pre', 'code',
+            'table', 'thead', 'tbody', 'tr', 'th', 'td', 'span', 'div', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'iframe', 'details', 'summary', 'img',
+            'span'
+        ],
+        ALLOWED_ATTR: [
+            'href', 'target', 'rel', 'class', 'id', 'title', 'aria-hidden', 'aria-label', 'role', 'data-lang',
+            'src', 'width', 'height', 'frameborder', 'allow', 'allowfullscreen', 'style'
+        ]
+    });
 
-  const parser = new DOMParser();
-  const doc = parser.parseFromString(clean, 'text/html');
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(clean, 'text/html');
 
-  // Add language class to <code> if missing
-  doc.querySelectorAll('pre code').forEach(code => {
-    if (![...code.classList].some(c => c.startsWith('language-'))) {
-      const firstLine = code.textContent.split('\n')[0].toLowerCase();
-      let lang = 'text'; // default
+    // Add language class to <code> if missing
+    doc.querySelectorAll('pre code').forEach(code => {
+        if (![...code.classList].some(c => c.startsWith('language-'))) {
+            const firstLine = code.textContent.split('\n')[0].toLowerCase();
+            let lang = 'text'; // default
 
-      if (firstLine.includes('css') || firstLine.includes('@media')) lang = 'css';
-      else if (firstLine.includes('js') || firstLine.includes('javascript')) lang = 'javascript';
-      else if (firstLine.includes('python') || firstLine.includes('def')) lang = 'python';
-      else if (firstLine.includes('html') || firstLine.includes('<!doctype')) lang = 'markup';
+            if (firstLine.includes('css') || firstLine.includes('@media')) lang = 'css';
+            else if (firstLine.includes('js') || firstLine.includes('javascript')) lang = 'javascript';
+            else if (firstLine.includes('python') || firstLine.includes('def')) lang = 'python';
+            else if (firstLine.includes('html') || firstLine.includes('<!doctype')) lang = 'markup';
 
-      code.classList.add(`language-${lang}`);
-    }
-  });
+            code.classList.add(`language-${lang}`);
+        }
+    });
 
-  return doc.body.innerHTML;
+    return doc.body.innerHTML;
 }
 
 // Highlight inserted code blocks
 function highlightCodeBlocks(container) {
-  if (typeof Prism === 'undefined') {
-    console.warn('Prism.js not loaded yet; skipping highlight.');
-    return;
-  }
-  container.querySelectorAll('pre code').forEach(el => {
-    if (!el.dataset.highlighted) {  // Avoid re-highlighting
-      Prism.highlightElement(el);
-      el.dataset.highlighted = 'true';
+    if (typeof Prism === 'undefined') {
+        console.warn('Prism.js not loaded yet; skipping highlight.');
+        return;
     }
-  });
+    container.querySelectorAll('pre code').forEach(el => {
+        if (!el.dataset.highlighted) { // Avoid re-highlighting
+            Prism.highlightElement(el);
+            el.dataset.highlighted = 'true';
+        }
+    });
 }
 
 function isCodeInput(text) {
-  const codePatterns = [
-    /^```[\s\S]*\n[\s\S]+\n```$/, // Full Markdown code block (start and end)
-    /\b(const|let|var|function|async|await|def|class|import|export)\b.*[\{\(\;]/, // JS/Python keywords followed by code-like syntax
-    /^{\s*[\w"]/, // JSON or object literal with content
-    /<\w+>.*<\/\w+>/, // HTML-like tags with closing tags
-    /@app\.route.*\(/ // Flask-specific route with function
-  ];
-  
-  // Remove URLs from text before testing to avoid false positives
-  const urlRegex = /https?:\/\/[^\s]+/i;
-  const cleanedText = text.replace(urlRegex, "").trim();
-  
-  // Only return true if the cleaned text (without URLs) matches a code pattern
-  return codePatterns.some(pattern => pattern.test(cleanedText));
+    const codePatterns = [
+        /^```[\s\S]*\n[\s\S]+\n```$/, // Full Markdown code block (start and end)
+        /\b(const|let|var|function|async|await|def|class|import|export)\b.*[\{\(\;]/, // JS/Python keywords followed by code-like syntax
+        /^{\s*[\w"]/, // JSON or object literal with content
+        /<\w+>.*<\/\w+>/, // HTML-like tags with closing tags
+        /@app\.route.*\(/ // Flask-specific route with function
+    ];
+
+    // Remove URLs from text before testing to avoid false positives
+    const urlRegex = /https?:\/\/[^\s]+/i;
+    const cleanedText = text.replace(urlRegex, "").trim();
+
+    // Only return true if the cleaned text (without URLs) matches a code pattern
+    return codePatterns.some(pattern => pattern.test(cleanedText));
 }
 
 function extractUrl(text) {
-  const urlRegex = /(https?:\/\/[^\s]+)/i;
-  const match = text.match(urlRegex);
-  if (match) {
-    return match[0];
-  }
-  return null;
+    const urlRegex = /(https?:\/\/[^\s]+)/i;
+    const match = text.match(urlRegex);
+    if (match) {
+        return match[0];
+    }
+    return null;
 }
 
 function extractYouTubeId(url) {
-  if (!url) return null;
-  const patterns = [
-    /(?:youtube\.com\/watch\?v=|youtube\.com\/.*[?&]v=)([a-zA-Z0-9_-]{11})/,
-    /youtu\.be\/([a-zA-Z0-9_-]{11})/,
-    /youtube\.com\/embed\/([a-zA-Z0-9_-]{11})/,
-    /youtube\.com\/v\/([a-zA-Z0-9_-]{11})/
-  ];
-  for (const pat of patterns) {
-    const m = url.match(pat);
-    if (m && m[1]) return m[1];
-  }
-  return null;
+    if (!url) return null;
+    const patterns = [
+        /(?:youtube\.com\/watch\?v=|youtube\.com\/.*[?&]v=)([a-zA-Z0-9_-]{11})/,
+        /youtu\.be\/([a-zA-Z0-9_-]{11})/,
+        /youtube\.com\/embed\/([a-zA-Z0-9_-]{11})/,
+        /youtube\.com\/v\/([a-zA-Z0-9_-]{11})/
+    ];
+    for (const pat of patterns) {
+        const m = url.match(pat);
+        if (m && m[1]) return m[1];
+    }
+    return null;
 }
 
 async function canEmbedYouTubeVideo(youtubeId) {
-  const url = `https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${youtubeId}&format=json`;
-  try {
-    const res = await fetch(url);
-    return res.ok;
-  } catch (err) {
-    return false;
-  }
+    const url = `https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${youtubeId}&format=json`;
+    try {
+        const res = await fetch(url);
+        return res.ok;
+    } catch (err) {
+        return false;
+    }
 }
 
 function createYouTubeThumbnailElement(youtubeId, originalUrl) {
-  const wrapper = document.createElement("div");
-  wrapper.className = "yt-thumb";
+    const wrapper = document.createElement("div");
+    wrapper.className = "yt-thumb";
 
-  const img = document.createElement("img");
-  img.src = `https://i.ytimg.com/vi/${youtubeId}/hqdefault.jpg`;
-  img.alt = "YouTube thumbnail";
-  wrapper.appendChild(img);
+    const img = document.createElement("img");
+    img.src = `https://i.ytimg.com/vi/${youtubeId}/hqdefault.jpg`;
+    img.alt = "YouTube thumbnail";
+    wrapper.appendChild(img);
 
-  const play = document.createElement("div");
-  play.className = "yt-play-btn";
-  wrapper.appendChild(play);
+    const play = document.createElement("div");
+    play.className = "yt-play-btn";
+    wrapper.appendChild(play);
 
-  const fallback = document.createElement("a");
-  fallback.className = "yt-fallback";
-  fallback.href = originalUrl;
-  fallback.target = "_blank";
-  fallback.rel = "noopener noreferrer";
-  fallback.style.display = "none";
+    const fallback = document.createElement("a");
+    fallback.className = "yt-fallback";
+    fallback.href = originalUrl;
+    fallback.target = "_blank";
+    fallback.rel = "noopener noreferrer";
+    fallback.style.display = "none";
 
-  wrapper.addEventListener("click", async function onClickLoad() {
-    wrapper.removeEventListener("click", onClickLoad);
+    wrapper.addEventListener("click", async function onClickLoad() {
+        wrapper.removeEventListener("click", onClickLoad);
 
-    const canEmbed = await canEmbedYouTubeVideo(youtubeId);
-    if (!canEmbed) {
-      wrapper.innerHTML = "";
-      fallback.style.display = "inline-block";
-      wrapper.appendChild(fallback);
-      return;
-    }
+        const canEmbed = await canEmbedYouTubeVideo(youtubeId);
+        if (!canEmbed) {
+            wrapper.innerHTML = "";
+            fallback.style.display = "inline-block";
+            wrapper.appendChild(fallback);
+            return;
+        }
 
-    const iframeWrap = document.createElement("div");
-    iframeWrap.style.width = "100%";
-    iframeWrap.style.aspectRatio = "16/9";
-    iframeWrap.style.position = "relative";
-    iframeWrap.style.overflow = "hidden";
-    iframeWrap.style.borderRadius = "12px";
+        const iframeWrap = document.createElement("div");
+        iframeWrap.style.width = "100%";
+        iframeWrap.style.aspectRatio = "16/9";
+        iframeWrap.style.position = "relative";
+        iframeWrap.style.overflow = "hidden";
+        iframeWrap.style.borderRadius = "12px";
 
-    const iframe = document.createElement("iframe");
-    iframe.frameBorder = "0";
-    iframe.allow = "";
-    iframe.allowFullscreen = false;
-    iframe.style.position = "absolute";
-    iframe.style.top = "0";
-    iframe.style.left = "0";
-    iframe.style.width = "100%";
-    iframe.style.height = "100%";
-    iframe.style.border = "0";
-    iframe.style.background = "#000";
+        const iframe = document.createElement("iframe");
+        iframe.frameBorder = "0";
+        iframe.allow = "";
+        iframe.allowFullscreen = false;
+        iframe.style.position = "absolute";
+        iframe.style.top = "0";
+        iframe.style.left = "0";
+        iframe.style.width = "100%";
+        iframe.style.height = "100%";
+        iframe.style.border = "0";
+        iframe.style.background = "#000";
 
-    setTimeout(() => {
-      iframe.src = `https://www.youtube-nocookie.com/embed/${youtubeId}`;
-    }, 50);
+        setTimeout(() => {
+            iframe.src = `https://www.youtube-nocookie.com/embed/${youtubeId}`;
+        }, 50);
 
-    iframeWrap.appendChild(iframe);
-    wrapper.innerHTML = "";
-    wrapper.appendChild(iframeWrap);
-    wrapper.appendChild(fallback);
+        iframeWrap.appendChild(iframe);
+        wrapper.innerHTML = "";
+        wrapper.appendChild(iframeWrap);
+        wrapper.appendChild(fallback);
 
-    let handled = false;
-    iframe.addEventListener("error", () => {
-      if (handled) return;
-      handled = true;
-      wrapper.innerHTML = "";
-      fallback.style.display = "inline-block";
-      wrapper.appendChild(fallback);
+        let handled = false;
+        iframe.addEventListener("error", () => {
+            if (handled) return;
+            handled = true;
+            wrapper.innerHTML = "";
+            fallback.style.display = "inline-block";
+            wrapper.appendChild(fallback);
+        });
+
+        setTimeout(() => {
+            if (!handled && wrapper.querySelector("iframe")) {
+                fallback.style.display = "inline-block";
+                wrapper.appendChild(fallback);
+            }
+        }, 1500);
     });
 
-    setTimeout(() => {
-      if (!handled && wrapper.querySelector("iframe")) {
-        fallback.style.display = "inline-block";
-        wrapper.appendChild(fallback);
-      }
-    }, 1500);
-  });
+    const container = document.createElement("div");
+    container.style.width = "100%";
+    container.style.borderRadius = "12px";
+    container.style.overflow = "hidden";
+    container.style.marginBottom = "10px";
+    container.appendChild(wrapper);
+    container.appendChild(fallback);
 
-  const container = document.createElement("div");
-  container.style.width = "100%";
-  container.style.borderRadius = "12px";
-  container.style.overflow = "hidden";
-  container.style.marginBottom = "10px";
-  container.appendChild(wrapper);
-  container.appendChild(fallback);
-
-  return container;
+    return container;
 }
 
 let websearchEnabled = false;
 
 document.getElementById("webBtn").addEventListener("click", () => {
-  websearchEnabled = !websearchEnabled;
-  document.getElementById("webBtn").classList.toggle("active", websearchEnabled);
+    websearchEnabled = !websearchEnabled;
+    document.getElementById("webBtn").classList.toggle("active", websearchEnabled);
 });
 
 function createBubbleElement(markdownText = "", type = "bot", hasSources = false, sourceUrl = "", sourceContent = "", metadata = null, embedUrl = "", youtubeId = null, originalUrl = null, images = []) {
-  const wrapper = document.createElement("div");
-  wrapper.className = `msg-row ${type === "user" ? "user" : "bot"}`;
+    const wrapper = document.createElement("div");
+    wrapper.className = `msg-row ${type === "user" ? "user" : "bot"}`;
 
-  const bubble = document.createElement("div");
-  bubble.className = "bubble " + (type === "user" ? "user" : type === "thinking" ? "thinking" : "bot");
+    const bubble = document.createElement("div");
+    bubble.className = "bubble " + (type === "user" ? "user" : type === "thinking" ? "thinking" : "bot");
 
-  if (youtubeId && originalUrl) {
-    if (allowYouTubeEmbeds) {
-      const thumbEl = createYouTubeThumbnailElement(youtubeId, originalUrl);
-      bubble.appendChild(thumbEl);
-    } else {
-      const fallbackLink = document.createElement("a");
-      fallbackLink.href = originalUrl;
-      fallbackLink.target = "_blank";
-      fallbackLink.textContent = "Watch on YouTube";
-      fallbackLink.className = "yt-fallback";
-      bubble.appendChild(fallbackLink);
+    if (youtubeId && originalUrl) {
+        if (allowYouTubeEmbeds) {
+            const thumbEl = createYouTubeThumbnailElement(youtubeId, originalUrl);
+            bubble.appendChild(thumbEl);
+        } else {
+            const fallbackLink = document.createElement("a");
+            fallbackLink.href = originalUrl;
+            fallbackLink.target = "_blank";
+            fallbackLink.textContent = "Watch on YouTube";
+            fallbackLink.className = "yt-fallback";
+            bubble.appendChild(fallbackLink);
+        }
+    } else if (embedUrl) {
+        const iframeWrap = document.createElement("div");
+        iframeWrap.style.width = "100%";
+        iframeWrap.style.borderRadius = "12px";
+        iframeWrap.style.overflow = "hidden";
+        iframeWrap.style.marginBottom = "10px";
+
+        const iframe = document.createElement("iframe");
+        iframe.src = embedUrl;
+        iframe.width = "100%";
+        iframe.height = "360";
+        iframe.frameBorder = "0";
+        iframe.allow = "";
+        iframe.allowFullscreen = true;
+        iframe.style.display = "block";
+        iframe.style.border = "0";
+        iframe.style.background = "#000";
+        iframeWrap.appendChild(iframe);
+        bubble.appendChild(iframeWrap);
     }
-  } else if (embedUrl) {
-    const iframeWrap = document.createElement("div");
-    iframeWrap.style.width = "100%";
-    iframeWrap.style.borderRadius = "12px";
-    iframeWrap.style.overflow = "hidden";
-    iframeWrap.style.marginBottom = "10px";
 
-    const iframe = document.createElement("iframe");
-    iframe.src = embedUrl;
-    iframe.width = "100%";
-    iframe.height = "360";
-    iframe.frameBorder = "0";
-    iframe.allow = "";
-    iframe.allowFullscreen = true;
-    iframe.style.display = "block";
-    iframe.style.border = "0";
-    iframe.style.background = "#000";
-    iframeWrap.appendChild(iframe);
-    bubble.appendChild(iframeWrap);
-  }
+    const textContainer = document.createElement("div");
+    textContainer.className = "bubble-text";
+    textContainer.innerHTML = sanitizeAndRenderMarkdown(markdownText || "");
 
-  const textContainer = document.createElement("div");
-  textContainer.className = "bubble-text";
-  textContainer.innerHTML = sanitizeAndRenderMarkdown(markdownText || "");
+    highlightCodeBlocks(textContainer);
+    bubble.appendChild(textContainer);
+    addPreCopyButtons(bubble);
 
-  highlightCodeBlocks(textContainer);
-  bubble.appendChild(textContainer);
-  addPreCopyButtons(bubble);
+    wrapper.appendChild(bubble);
 
-  wrapper.appendChild(bubble);
+    const controls = document.createElement("div");
+    controls.className = "controls";
+    wrapper.appendChild(controls);
 
-  const controls = document.createElement("div");
-  controls.className = "controls";
-  wrapper.appendChild(controls);
+    imageModal.addEventListener("click", () => {
+        imageModal.classList.remove("active");
+        expandedImage.src = "";
+    });
 
-  imageModal.addEventListener("click", () => {
-    imageModal.classList.remove("active");
-    expandedImage.src = "";
-  });
-
-  return { wrapper, bubble, textContainer, controls };
+    return {
+        wrapper,
+        bubble,
+        textContainer,
+        controls
+    };
 }
 
 function addPreCopyButtons(bubble) {
-  bubble.querySelectorAll("pre").forEach(pre => {
-    if (pre.querySelector(".inline-copy-btn")) return;
-    pre.style.position = "relative";
+    bubble.querySelectorAll("pre").forEach(pre => {
+        if (pre.querySelector(".inline-copy-btn")) return;
+        pre.style.position = "relative";
 
-    const code = pre.querySelector("code") || pre;
-    const btn = document.createElement("button");
-    btn.className = "inline-copy-btn copy-btn";
-    btn.innerHTML = '<i class="fas fa-copy"></i>';
-    btn.setAttribute("title", "Copy code");
+        const code = pre.querySelector("code") || pre;
+        const btn = document.createElement("button");
+        btn.className = "inline-copy-btn copy-btn";
+        btn.innerHTML = '<i class="fas fa-copy"></i>';
+        btn.setAttribute("title", "Copy code");
 
-    btn.addEventListener("click", async (e) => {
-      e.stopPropagation();
-      try {
-        await navigator.clipboard.writeText(code.textContent);
-        btn.innerHTML = '<i class="fas fa-check"></i>';
-        setTimeout(() => btn.innerHTML = '<i class="fas fa-copy"></i>', 1400);
-      } catch {
-        btn.innerHTML = '<i class="fas fa-times"></i>';
-        setTimeout(() => btn.innerHTML = '<i class="fas fa-copy"></i>', 1400);
-      }
+        btn.addEventListener("click", async (e) => {
+            e.stopPropagation();
+            try {
+                await navigator.clipboard.writeText(code.textContent);
+                btn.innerHTML = '<i class="fas fa-check"></i>';
+                setTimeout(() => btn.innerHTML = '<i class="fas fa-copy"></i>', 1400);
+            } catch {
+                btn.innerHTML = '<i class="fas fa-times"></i>';
+                setTimeout(() => btn.innerHTML = '<i class="fas fa-copy"></i>', 1400);
+            }
+        });
+
+        pre.appendChild(btn);
     });
-
-    pre.appendChild(btn);
-  });
 }
 
 function streamMessage(textContainer, thinkingBubble, onChunk, onComplete) {
-  let accumulatedText = "";
-  let hasContent = false;
-  return async (chunk) => {
-    if (chunk) {
-      accumulatedText += chunk;
-      if (!hasContent && accumulatedText.trim()) {
-        hasContent = true;
-        try { thinkingBubble.wrapper.remove(); } catch (e) {}
-      }
-      onChunk(accumulatedText);
-      textContainer.innerHTML = sanitizeAndRenderMarkdown(accumulatedText);
-      textContainer.querySelectorAll("a").forEach(a => {
-        a.setAttribute("target", "_blank");
-        a.setAttribute("rel", "noopener noreferrer");
-      });
-    } else if (!hasContent) {
-      try { thinkingBubble.wrapper.remove(); } catch (e) {}
-    }
-    return accumulatedText;
-  };
+    let accumulatedText = "";
+    let hasContent = false;
+    return async (chunk) => {
+        if (chunk) {
+            accumulatedText += chunk;
+            if (!hasContent && accumulatedText.trim()) {
+                hasContent = true;
+                try {
+                    thinkingBubble.wrapper.remove();
+                } catch (e) {}
+            }
+            onChunk(accumulatedText);
+            textContainer.innerHTML = sanitizeAndRenderMarkdown(accumulatedText);
+            textContainer.querySelectorAll("a").forEach(a => {
+                a.setAttribute("target", "_blank");
+                a.setAttribute("rel", "noopener noreferrer");
+            });
+        } else if (!hasContent) {
+            try {
+                thinkingBubble.wrapper.remove();
+            } catch (e) {}
+        }
+        return accumulatedText;
+    };
 }
 
 // Debounce function to prevent rapid clicks
 function debounce(func, wait) {
-  let timeout;
-  return function executedFunction(...args) {
-    const later = () => {
-      clearTimeout(timeout);
-      func(...args);
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
     };
-    clearTimeout(timeout);
-    timeout = setTimeout(later, wait);
-  };
 }
 
 function addBubble(text, type = "bot", hasSources = false, sourceUrl = "", sourceContent = "", metadata = null, embedUrl = "", youtubeId = null, originalUrl = null, messageId = null, images = []) {
-  const { wrapper, bubble, textContainer, controls } = createBubbleElement(text, type, hasSources, sourceUrl, sourceContent, metadata, embedUrl, youtubeId, originalUrl, images);
-  if (messageId) {
-    wrapper.dataset.messageId = messageId;
-  } else if (type === "user") {
-    wrapper.dataset.messageId = Date.now().toString();
-  }
-  messagesEl.appendChild(wrapper);
+    const {
+        wrapper,
+        bubble,
+        textContainer,
+        controls
+    } = createBubbleElement(text, type, hasSources, sourceUrl, sourceContent, metadata, embedUrl, youtubeId, originalUrl, images);
+    if (messageId) {
+        wrapper.dataset.messageId = messageId;
+    } else if (type === "user") {
+        wrapper.dataset.messageId = Date.now().toString();
+    }
+    messagesEl.appendChild(wrapper);
 
-  // Update token count for user or bot messages
-if (type === "user" || type === "bot" || type === "system") {
-  currentContextLength = calculateChatTokens();
-  updateProgressBar(currentContextLength, maxContextLength);
-}
+    // Update token count for user or bot messages
+    if (type === "user" || type === "bot" || type === "system") {
+        currentContextLength = calculateChatTokens();
+        updateProgressBar(currentContextLength, maxContextLength);
+    }
 
-  const isThinking = type === "thinking";
-  const isSearchingBubble = typeof text === "string" && (text.toLowerCase().includes("searching") || text.toLowerCase().includes("thinking"));
+    const isThinking = type === "thinking";
+    const isSearchingBubble = typeof text === "string" && (text.toLowerCase().includes("searching") || text.toLowerCase().includes("thinking"));
 
-  if (!isThinking && !isSearchingBubble) {
-    const copyBtn = document.createElement("button");
-    copyBtn.className = "copy-btn";
-    copyBtn.innerHTML = '<i class="fas fa-copy"></i>';
-    copyBtn.setAttribute("title", "Copy message");
-    copyBtn.addEventListener("click", async (e) => {
-      e.stopPropagation();
-      try {
-        const tempDiv = document.createElement('div');
-        tempDiv.innerHTML = bubble.innerHTML;
+    if (!isThinking && !isSearchingBubble) {
+        const copyBtn = document.createElement("button");
+        copyBtn.className = "copy-btn";
+        copyBtn.innerHTML = '<i class="fas fa-copy"></i>';
+        copyBtn.setAttribute("title", "Copy message");
+        copyBtn.addEventListener("click", async (e) => {
+            e.stopPropagation();
+            try {
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = bubble.innerHTML;
 
-        function stripTagsAndNormalize(node) {
-          let text = '';
-          if (node.nodeType === Node.TEXT_NODE) {
-            text = node.textContent || node.innerText || '';
-          } else if (node.nodeType === Node.ELEMENT_NODE) {
-            if (['IMG', 'IFRAME', 'PRE', 'CODE'].includes(node.tagName)) {
-              if (node.tagName === 'PRE' || node.tagName === 'CODE') {
-                text = (node.textContent || '').replace(/\n\s*\n/g, '\n\n').trim();
-              }
-            } else {
-              for (let child of node.childNodes) {
-                text += stripTagsAndNormalize(child);
-              }
+                function stripTagsAndNormalize(node) {
+                    let text = '';
+                    if (node.nodeType === Node.TEXT_NODE) {
+                        text = node.textContent || node.innerText || '';
+                    } else if (node.nodeType === Node.ELEMENT_NODE) {
+                        if (['IMG', 'IFRAME', 'PRE', 'CODE'].includes(node.tagName)) {
+                            if (node.tagName === 'PRE' || node.tagName === 'CODE') {
+                                text = (node.textContent || '').replace(/\n\s*\n/g, '\n\n').trim();
+                            }
+                        } else {
+                            for (let child of node.childNodes) {
+                                text += stripTagsAndNormalize(child);
+                            }
+                        }
+                        text = text.replace(/\s+/g, ' ').replace(/ \n/g, '\n').trim();
+                    }
+                    return text;
+                }
+
+                const cleanText = stripTagsAndNormalize(tempDiv);
+                await navigator.clipboard.writeText(cleanText);
+                copyBtn.innerHTML = '<i class="fas fa-check"></i>';
+                setTimeout(() => copyBtn.innerHTML = '<i class="fas fa-copy"></i>', 1400);
+            } catch (err) {
+                console.error('Copy failed:', err);
+                copyBtn.innerHTML = '<i class="fas fa-times"></i>';
+                setTimeout(() => copyBtn.innerHTML = '<i class="fas fa-copy"></i>', 1400);
             }
-            text = text.replace(/\s+/g, ' ').replace(/ \n/g, '\n').trim();
-          }
-          return text;
-        }
+        });
+        controls.appendChild(copyBtn);
 
-        const cleanText = stripTagsAndNormalize(tempDiv);
-        await navigator.clipboard.writeText(cleanText);
-        copyBtn.innerHTML = '<i class="fas fa-check"></i>';
-        setTimeout(() => copyBtn.innerHTML = '<i class="fas fa-copy"></i>', 1400);
-      } catch (err) {
-        console.error('Copy failed:', err);
-        copyBtn.innerHTML = '<i class="fas fa-times"></i>';
-        setTimeout(() => copyBtn.innerHTML = '<i class="fas fa-copy"></i>', 1400);
-      }
-    });
-    controls.appendChild(copyBtn);
-
-    if (type === "user") {
-      const editBtn = document.createElement("button");
-      editBtn.className = "edit-btn";
-      editBtn.innerHTML = '<i class="fas fa-edit"></i>';
-      editBtn.setAttribute("title", "Edit message");
-      editBtn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        const messageId = wrapper.dataset.messageId;
-        const message = currentChat.find(m => m.role === "user" && m.id === messageId);
-        const currentText = message ? message.content : text;
-        const textarea = document.createElement("textarea");
-        textarea.className = "input";
-        textarea.style.maxWidth = "820px";
-        textarea.style.width = "100%";
-        textarea.value = currentText;
-        bubble.innerHTML = "";
-        bubble.appendChild(textarea);
-        controls.innerHTML = "";
-        const saveBtn = document.createElement("button");
-        saveBtn.className = "btn primary";
-        saveBtn.textContent = "Save";
-        saveBtn.addEventListener("click", () => {
-          const newText = textarea.value.trim();
-          if (newText) {
-            bubble.innerHTML = "";
-            const newTextContainer = document.createElement("div");
-            newTextContainer.className = "bubble-text";
-            newTextContainer.innerHTML = sanitizeAndRenderMarkdown(newText);
-            highlightCodeBlocks(newTextContainer);
-            bubble.appendChild(newTextContainer);
-            controls.innerHTML = "";
-            controls.appendChild(copyBtn);
+        if (type === "user") {
+            const editBtn = document.createElement("button");
+            editBtn.className = "edit-btn";
+            editBtn.innerHTML = '<i class="fas fa-edit"></i>';
+            editBtn.setAttribute("title", "Edit message");
+            editBtn.addEventListener("click", (e) => {
+                e.stopPropagation();
+                const messageId = wrapper.dataset.messageId;
+                const message = currentChat.find(m => m.role === "user" && m.id === messageId);
+                const currentText = message ? message.content : text;
+                const textarea = document.createElement("textarea");
+                textarea.className = "input";
+                textarea.style.maxWidth = "820px";
+                textarea.style.width = "100%";
+                textarea.value = currentText;
+                bubble.innerHTML = "";
+                bubble.appendChild(textarea);
+                controls.innerHTML = "";
+                const saveBtn = document.createElement("button");
+                saveBtn.className = "btn primary";
+                saveBtn.textContent = "Save";
+                saveBtn.addEventListener("click", () => {
+                    const newText = textarea.value.trim();
+                    if (newText) {
+                        bubble.innerHTML = "";
+                        const newTextContainer = document.createElement("div");
+                        newTextContainer.className = "bubble-text";
+                        newTextContainer.innerHTML = sanitizeAndRenderMarkdown(newText);
+                        highlightCodeBlocks(newTextContainer);
+                        bubble.appendChild(newTextContainer);
+                        controls.innerHTML = "";
+                        controls.appendChild(copyBtn);
+                        controls.appendChild(editBtn);
+                        const messageIndex = currentChat.findIndex(m => m.role === "user" && m.id === messageId);
+                        if (messageIndex !== -1) {
+                            currentChat[messageIndex].content = newText;
+                        } else {
+                            const lastUserMessageIndex = [...currentChat].reverse().findIndex(m => m.role === "user");
+                            if (lastUserMessageIndex !== -1) {
+                                const index = currentChat.length - 1 - lastUserMessageIndex;
+                                currentChat[index].content = newText;
+                                currentChat[index].id = messageId;
+                            }
+                        }
+                        addPreCopyButtons(bubble);
+                    }
+                });
+                const cancelBtn = document.createElement("button");
+                cancelBtn.className = "btn";
+                cancelBtn.textContent = "Cancel";
+                cancelBtn.addEventListener("click", () => {
+                    bubble.innerHTML = "";
+                    const newTextContainer = document.createElement("div");
+                    newTextContainer.className = "bubble-text";
+                    newTextContainer.innerHTML = sanitizeAndRenderMarkdown(currentText);
+                    highlightCodeBlocks(newTextContainer);
+                    bubble.appendChild(newTextContainer);
+                    controls.innerHTML = "";
+                    controls.appendChild(copyBtn);
+                    controls.appendChild(editBtn);
+                    addPreCopyButtons(bubble);
+                });
+                controls.appendChild(saveBtn);
+                controls.appendChild(cancelBtn);
+                textarea.focus();
+                textarea.addEventListener("keydown", (e) => {
+                    if (e.key === "Enter" && !e.shiftKey) {
+                        e.preventDefault();
+                        saveBtn.click();
+                    }
+                });
+            });
             controls.appendChild(editBtn);
-            const messageIndex = currentChat.findIndex(m => m.role === "user" && m.id === messageId);
-            if (messageIndex !== -1) {
-              currentChat[messageIndex].content = newText;
+        }
+
+        if (type === "bot") {
+            const retryBtn = document.createElement("button");
+            retryBtn.className = "retry-btn";
+            retryBtn.innerHTML = '<i class="fas fa-rotate-right"></i>';
+            retryBtn.setAttribute("role", "button");
+            retryBtn.setAttribute("aria-label", "Retry last message");
+            retryBtn.addEventListener("click", async (e) => {
+                e.stopPropagation();
+                if (sendBtn.disabled) return;
+
+                const botMessageId = wrapper.dataset.messageId;
+                const botMessageIndex = currentChat.findIndex(m => m.role === "assistant" && m.id === botMessageId);
+
+                // Find the most recent user message before the bot message
+                let userMessage = null;
+                let userMessageId = null;
+                for (let i = botMessageIndex - 1; i >= 0; i--) {
+                    if (currentChat[i].role === "user") {
+                        userMessage = currentChat[i];
+                        userMessageId = currentChat[i].id;
+                        break;
+                    }
+                }
+
+                if (!userMessage) {
+                    console.warn("No user message found for retry");
+                    addBubble("⚠️ Error: No user message found for retry.", "bot");
+                    return;
+                }
+
+                // Remove the bot message and any subsequent messages
+                if (botMessageIndex !== -1) {
+                    currentChat.splice(botMessageIndex, 1);
+                }
+
+                // Remove the bot message from the UI
+                wrapper.remove();
+
+                // Restore the user message in the UI if it was removed
+                const userMessageElement = messagesEl.querySelector(`.msg-row.user[data-message-id="${userMessageId}"]`);
+                if (userMessageElement) {
+                    const textContainer = userMessageElement.querySelector(".bubble-text");
+                    if (textContainer) {
+                        textContainer.innerHTML = sanitizeAndRenderMarkdown(userMessage.content);
+                        highlightCodeBlocks(textContainer);
+                    }
+                } else {
+                    const bubble = addBubble(userMessage.content, "user");
+                    userMessage.id = bubble.wrapper.dataset.messageId;
+                }
+
+                // Restore any system prompts that were part of the original context
+                const systemMessages = currentChat.filter(m => m.role === "system");
+                currentChat = [...systemMessages, userMessage];
+
+                inputEl.value = userMessage.content;
+                await sendMessage(true);
+            });
+            controls.appendChild(retryBtn);
+        }
+
+        if (hasSources && sourceUrl && sourceContent) {
+            const sourcesWrapper = document.createElement("button");
+            sourcesWrapper.className = "sources-wrapper-btn";
+            sourcesWrapper.setAttribute("role", "button");
+            sourcesWrapper.setAttribute("aria-label", "View sources and articles");
+            sourcesWrapper.setAttribute("title", "View source content and article indicators");
+            sourcesWrapper.style.background = "transparent";
+            sourcesWrapper.style.border = "none";
+            sourcesWrapper.style.cursor = "pointer";
+            sourcesWrapper.style.display = "flex";
+            sourcesWrapper.style.alignItems = "center";
+            sourcesWrapper.style.padding = "6px";
+            sourcesWrapper.style.borderRadius = "6px";
+
+            const iconSpan = document.createElement("span");
+            iconSpan.innerHTML = '<i class="fas fa-link"></i>';
+            iconSpan.style.marginRight = "6px";
+            sourcesWrapper.appendChild(iconSpan);
+
+            const iconContainer = document.createElement("div");
+            iconContainer.className = "article-icons";
+
+            let sourceCount = 0;
+            let articles = [];
+            if (metadata && metadata.fromNews) {
+                articles = JSON.parse(sourceContent).articles || [];
+                sourceCount = Math.min(4, articles.length);
+            } else if (metadata && metadata.fromWebSearch) {
+                try {
+                    const searchResults = JSON.parse(sourceContent);
+                    articles = searchResults.map(result => ({
+                        site: result.site
+                    }));
+                    sourceCount = Math.min(4, searchResults.length);
+                } catch (e) {
+                    console.error("Error parsing web search sourceContent:", e);
+                }
             } else {
-              const lastUserMessageIndex = [...currentChat].reverse().findIndex(m => m.role === "user");
-              if (lastUserMessageIndex !== -1) {
-                const index = currentChat.length - 1 - lastUserMessageIndex;
-                currentChat[index].content = newText;
-                currentChat[index].id = messageId;
-              }
+                sourceCount = 1;
+                articles = [{
+                    site: sourceUrl
+                }];
             }
-            addPreCopyButtons(bubble);
-          }
-        });
-        const cancelBtn = document.createElement("button");
-        cancelBtn.className = "btn";
-        cancelBtn.textContent = "Cancel";
-        cancelBtn.addEventListener("click", () => {
-          bubble.innerHTML = "";
-          const newTextContainer = document.createElement("div");
-          newTextContainer.className = "bubble-text";
-          newTextContainer.innerHTML = sanitizeAndRenderMarkdown(currentText);
-          highlightCodeBlocks(newTextContainer);
-          bubble.appendChild(newTextContainer);
-          controls.innerHTML = "";
-          controls.appendChild(copyBtn);
-          controls.appendChild(editBtn);
-          addPreCopyButtons(bubble);
-        });
-        controls.appendChild(saveBtn);
-        controls.appendChild(cancelBtn);
-        textarea.focus();
-        textarea.addEventListener("keydown", (e) => {
-          if (e.key === "Enter" && !e.shiftKey) {
-            e.preventDefault();
-            saveBtn.click();
-          }
-        });
-      });
-      controls.appendChild(editBtn);
+
+            function getFaviconUrl(url) {
+                if (!url || !url.startsWith("http")) return null;
+                try {
+                    const hostname = new URL(url).hostname;
+                    return `https://www.google.com/s2/favicons?domain=${hostname}`;
+                } catch (e) {
+                    return null;
+                }
+            }
+
+            for (let i = 0; i < sourceCount; i++) {
+                const article = articles[i];
+                const faviconUrl = getFaviconUrl(article.site);
+                if (faviconUrl) {
+                    const img = document.createElement("img");
+                    img.src = faviconUrl;
+                    img.alt = `${article.site} favicon`;
+                    img.style.width = "12px";
+                    img.style.height = "12px";
+                    img.style.borderRadius = "50%";
+                    img.style.marginRight = "2px";
+                    img.style.objectFit = "cover";
+                    img.onerror = () => {
+                        img.style.display = "none";
+                        const fallback = document.createElement("span");
+                        fallback.style.width = "6px";
+                        fallback.style.height = "6px";
+                        fallback.style.backgroundColor = "#bbb";
+                        fallback.style.borderRadius = "50%";
+                        fallback.style.display = "inline-block";
+                        iconContainer.appendChild(fallback);
+                    };
+                    iconContainer.appendChild(img);
+                } else {
+                    const fallback = document.createElement("span");
+                    fallback.style.width = "6px";
+                    fallback.style.height = "6px";
+                    fallback.style.backgroundColor = "#bbb";
+                    fallback.style.borderRadius = "50%";
+                    fallback.style.display = "inline-block";
+                    fallback.style.marginRight = "2px";
+                    iconContainer.appendChild(fallback);
+                }
+            }
+
+            sourcesWrapper.appendChild(iconContainer);
+
+            sourcesWrapper.addEventListener("click", () => {
+                modalContentEl.innerHTML = "";
+                let sections = [];
+
+                if (metadata && metadata.fromWebSearch) {
+                    let searchResults;
+                    try {
+                        searchResults = JSON.parse(sourceContent);
+                    } catch (e) {
+                        console.error("Error parsing web search sourceContent:", e);
+                        searchResults = [];
+                    }
+                    sections = searchResults.map((result, idx) => {
+                        const hostname = isValidUrl(result.site) ? new URL(result.site).hostname : `Source ${idx + 1}`;
+                        return {
+                            title: hostname,
+                            favicon: getFaviconUrl(result.site),
+                            url: isValidUrl(result.site) ? result.site : null,
+                            content: isValidUrl(result.site) ? `Full URL: ${result.site}\n\n${result.summary || "No summary available"}` : `Source ${idx + 1}\n\n${result.summary || "No summary available"}`
+                        };
+                    });
+                } else if (metadata && metadata.fromWeather) {
+                    sections = [{
+                        title: "Open Meteo",
+                        favicon: getFaviconUrl("https://open-meteo.com/"),
+                        url: sourceUrl,
+                        content: sourceContent
+                    }];
+                } else if (metadata && metadata.fromNews) {
+                    const articles = JSON.parse(sourceContent).articles || [];
+                    sections = articles.map((article, idx) => {
+                        const hostname = article.site ? new URL(article.site).hostname : '';
+                        return {
+                            title: hostname || `Article ${idx + 1}`,
+                            favicon: getFaviconUrl(article.site),
+                            url: article.site || sourceUrl,
+                            content: `${article.summary || "No summary available"}\n\nFull URL: ${article.site || sourceUrl || "No URL available"}`
+                        };
+                    });
+                } else if (metadata && metadata.fromPDF) {
+                    sections = [{
+                        title: `PDF: ${sourceUrl}`,
+                        favicon: null,
+                        content: sourceContent.slice(0, 5000) || "No content available"
+                    }];
+                } else if (metadata && metadata.fromYouTube) {
+                    const videoMetadata = metadata.metadata || metadata;
+                    sections = [{
+                            title: "Video Title",
+                            favicon: null,
+                            content: videoMetadata.title || "Unknown"
+                        },
+                        {
+                            title: "Channel",
+                            favicon: null,
+                            content: videoMetadata.channel_name || "Unknown"
+                        },
+                        {
+                            title: "Language",
+                            favicon: null,
+                            content: videoMetadata.language || "Unknown"
+                        },
+                        {
+                            title: "Generated Transcript",
+                            favicon: null,
+                            content: videoMetadata.is_generated ? "Yes" : "No"
+                        },
+                        {
+                            title: "Source URL",
+                            favicon: getFaviconUrl(sourceUrl),
+                            url: sourceUrl,
+                            content: sourceUrl
+                        },
+                        {
+                            title: "Transcript",
+                            favicon: null,
+                            content: sourceContent
+                        }
+                    ];
+                } else {
+                    sections = [{
+                        title: sourceUrl ? new URL(sourceUrl).hostname : "Source",
+                        favicon: getFaviconUrl(sourceUrl),
+                        url: sourceUrl,
+                        content: `Full URL: ${sourceUrl}\n\n${sourceContent || sourceUrl}`
+                    }];
+                }
+
+                if (images && images.length > 0) {
+                    sections.push({
+                        title: "Images",
+                        favicon: null,
+                        content: images.map(img => `[${img}](${img})`).join('\n')
+                    });
+                }
+
+                sections.forEach(sec => {
+                    const details = document.createElement("details");
+                    details.style.marginBottom = "8px";
+                    const summary = document.createElement("summary");
+                    summary.style.cursor = "pointer";
+                    summary.style.fontWeight = "600";
+                    summary.style.color = "var(--accent)";
+                    summary.style.fontSize = "14px";
+                    summary.style.display = "flex";
+                    summary.style.alignItems = "center";
+                    summary.style.gap = "6px";
+
+                    if (sec.favicon) {
+                        const faviconImg = document.createElement("img");
+                        faviconImg.src = sec.favicon;
+                        faviconImg.style.width = "16px";
+                        faviconImg.style.height = "16px";
+                        faviconImg.style.verticalAlign = "middle";
+                        faviconImg.onerror = () => {
+                            faviconImg.style.display = "none";
+                            const fallbackIcon = document.createElement("i");
+                            fallbackIcon.className = "fas fa-globe";
+                            fallbackIcon.style.fontSize = "14px";
+                            summary.insertBefore(fallbackIcon, faviconImg);
+                        };
+                        summary.appendChild(faviconImg);
+                    } else if (metadata && metadata.fromPDF) {
+                        const pdfIcon = document.createElement("i");
+                        pdfIcon.className = "fas fa-file-pdf";
+                        pdfIcon.style.fontSize = "14px";
+                        summary.appendChild(pdfIcon);
+                    } else if (metadata && metadata.fromYouTube) {
+                        const ytIcon = document.createElement("i");
+                        ytIcon.className = "fab fa-youtube";
+                        ytIcon.style.fontSize = "14px";
+                        summary.appendChild(ytIcon);
+                    } else {
+                        const defaultIcon = document.createElement("i");
+                        defaultIcon.className = "fas fa-globe";
+                        defaultIcon.style.fontSize = "14px";
+                        summary.appendChild(defaultIcon);
+                    }
+
+                    if (sec.url) {
+                        const link = document.createElement("a");
+                        link.href = sec.url;
+                        link.target = "_blank";
+                        link.rel = "noopener noreferrer";
+                        link.textContent = sec.title;
+                        link.style.color = "var(--accent)";
+                        link.style.textDecoration = "underline";
+                        link.addEventListener('click', (e) => e.stopPropagation());
+                        summary.appendChild(link);
+                    } else {
+                        const titleSpan = document.createElement("span");
+                        titleSpan.textContent = sec.title;
+                        summary.appendChild(titleSpan);
+                    }
+
+                    details.appendChild(summary);
+                    const contentDiv = document.createElement("div");
+                    contentDiv.style.padding = "6px 10px";
+                    contentDiv.style.fontSize = "13px";
+                    contentDiv.style.color = "var(--text)";
+                    contentDiv.style.whiteSpace = "pre-wrap";
+                    contentDiv.innerHTML = sanitizeAndRenderMarkdown(sec.content);
+                    highlightCodeBlocks(contentDiv);
+                    details.appendChild(contentDiv);
+                    modalContentEl.appendChild(details);
+                });
+
+                modalEl.classList.add("active");
+                modalOverlay.classList.add("active");
+            });
+
+            modalOverlay.addEventListener("click", () => {
+                modalEl.classList.remove("active");
+                modalOverlay.classList.remove("active");
+                settingsModal.classList.remove("active");
+                imageModal.classList.remove("active");
+            });
+            controls.appendChild(sourcesWrapper);
+        }
+
+        if (!wrapper.dataset.messageId) {
+            wrapper.dataset.messageId = `msg-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+        }
     }
 
-if (type === "bot") {
-    const retryBtn = document.createElement("button");
-    retryBtn.className = "retry-btn";
-    retryBtn.innerHTML = '<i class="fas fa-rotate-right"></i>';
-    retryBtn.setAttribute("role", "button");
-    retryBtn.setAttribute("aria-label", "Retry last message");
-    retryBtn.addEventListener("click", async (e) => {
-        e.stopPropagation();
-        if (sendBtn.disabled) return;
-
-        const botMessageId = wrapper.dataset.messageId;
-        const botMessageIndex = currentChat.findIndex(m => m.role === "assistant" && m.id === botMessageId);
-
-        // Find the most recent user message before the bot message
-        let userMessage = null;
-        let userMessageId = null;
-        for (let i = botMessageIndex - 1; i >= 0; i--) {
-            if (currentChat[i].role === "user") {
-                userMessage = currentChat[i];
-                userMessageId = currentChat[i].id;
-                break;
-            }
-        }
-
-        if (!userMessage) {
-            console.warn("No user message found for retry");
-            addBubble("⚠️ Error: No user message found for retry.", "bot");
-            return;
-        }
-
-        // Remove the bot message and any subsequent messages
-        if (botMessageIndex !== -1) {
-            currentChat.splice(botMessageIndex, 1);
-        }
-
-        // Remove the bot message from the UI
-        wrapper.remove();
-
-        // Restore the user message in the UI if it was removed
-        const userMessageElement = messagesEl.querySelector(`.msg-row.user[data-message-id="${userMessageId}"]`);
-        if (userMessageElement) {
-            const textContainer = userMessageElement.querySelector(".bubble-text");
-            if (textContainer) {
-                textContainer.innerHTML = sanitizeAndRenderMarkdown(userMessage.content);
-                highlightCodeBlocks(textContainer);
-            }
-        } else {
-            const bubble = addBubble(userMessage.content, "user");
-            userMessage.id = bubble.wrapper.dataset.messageId;
-        }
-
-        // Restore any system prompts that were part of the original context
-        const systemMessages = currentChat.filter(m => m.role === "system");
-        currentChat = [...systemMessages, userMessage];
-
-        inputEl.value = userMessage.content;
-        await sendMessage(true);
-    });
-    controls.appendChild(retryBtn);
-}
-
-    if (hasSources && sourceUrl && sourceContent) {
-      const sourcesWrapper = document.createElement("button");
-      sourcesWrapper.className = "sources-wrapper-btn";
-      sourcesWrapper.setAttribute("role", "button");
-      sourcesWrapper.setAttribute("aria-label", "View sources and articles");
-      sourcesWrapper.setAttribute("title", "View source content and article indicators");
-      sourcesWrapper.style.background = "transparent";
-      sourcesWrapper.style.border = "none";
-      sourcesWrapper.style.cursor = "pointer";
-      sourcesWrapper.style.display = "flex";
-      sourcesWrapper.style.alignItems = "center";
-      sourcesWrapper.style.padding = "6px";
-      sourcesWrapper.style.borderRadius = "6px";
-
-      const iconSpan = document.createElement("span");
-      iconSpan.innerHTML = '<i class="fas fa-link"></i>';
-      iconSpan.style.marginRight = "6px";
-      sourcesWrapper.appendChild(iconSpan);
-
-      const iconContainer = document.createElement("div");
-      iconContainer.className = "article-icons";
-
-      let sourceCount = 0;
-      let articles = [];
-      if (metadata && metadata.fromNews) {
-        articles = JSON.parse(sourceContent).articles || [];
-        sourceCount = Math.min(4, articles.length);
-      } else if (metadata && metadata.fromWebSearch) {
-        try {
-          const searchResults = JSON.parse(sourceContent);
-          articles = searchResults.map(result => ({ site: result.site }));
-          sourceCount = Math.min(4, searchResults.length);
-        } catch (e) {
-          console.error("Error parsing web search sourceContent:", e);
-        }
-      } else {
-        sourceCount = 1;
-        articles = [{ site: sourceUrl }];
-      }
-
-      function getFaviconUrl(url) {
-        if (!url || !url.startsWith("http")) return null;
-        try {
-          const hostname = new URL(url).hostname;
-          return `https://www.google.com/s2/favicons?domain=${hostname}`;
-        } catch (e) {
-          return null;
-        }
-      }
-
-      for (let i = 0; i < sourceCount; i++) {
-        const article = articles[i];
-        const faviconUrl = getFaviconUrl(article.site);
-        if (faviconUrl) {
-          const img = document.createElement("img");
-          img.src = faviconUrl;
-          img.alt = `${article.site} favicon`;
-          img.style.width = "12px";
-          img.style.height = "12px";
-          img.style.borderRadius = "50%";
-          img.style.marginRight = "2px";
-          img.style.objectFit = "cover";
-          img.onerror = () => {
-            img.style.display = "none";
-            const fallback = document.createElement("span");
-            fallback.style.width = "6px";
-            fallback.style.height = "6px";
-            fallback.style.backgroundColor = "#bbb";
-            fallback.style.borderRadius = "50%";
-            fallback.style.display = "inline-block";
-            iconContainer.appendChild(fallback);
-          };
-          iconContainer.appendChild(img);
-        } else {
-          const fallback = document.createElement("span");
-          fallback.style.width = "6px";
-          fallback.style.height = "6px";
-          fallback.style.backgroundColor = "#bbb";
-          fallback.style.borderRadius = "50%";
-          fallback.style.display = "inline-block";
-          fallback.style.marginRight = "2px";
-          iconContainer.appendChild(fallback);
-        }
-      }
-
-      sourcesWrapper.appendChild(iconContainer);
-
-      sourcesWrapper.addEventListener("click", () => {
-        modalContentEl.innerHTML = "";
-        let sections = [];
-
-        if (metadata && metadata.fromWebSearch) {
-          let searchResults;
-          try {
-            searchResults = JSON.parse(sourceContent);
-          } catch (e) {
-            console.error("Error parsing web search sourceContent:", e);
-            searchResults = [];
-          }
-          sections = searchResults.map((result, idx) => {
-            const hostname = isValidUrl(result.site) ? new URL(result.site).hostname : `Source ${idx + 1}`;
-            return {
-              title: hostname,
-              favicon: getFaviconUrl(result.site),
-              url: isValidUrl(result.site) ? result.site : null,
-              content: isValidUrl(result.site) ? `Full URL: ${result.site}\n\n${result.summary || "No summary available"}` : `Source ${idx + 1}\n\n${result.summary || "No summary available"}`
-            };
-          });
-        } else if (metadata && metadata.fromWeather) {
-          sections = [
-            {
-              title: "Open Meteo",
-              favicon: getFaviconUrl("https://open-meteo.com/"),
-              url: sourceUrl,
-              content: sourceContent
-            }
-          ];
-        } else if (metadata && metadata.fromNews) {
-          const articles = JSON.parse(sourceContent).articles || [];
-          sections = articles.map((article, idx) => {
-            const hostname = article.site ? new URL(article.site).hostname : '';
-            return {
-              title: hostname || `Article ${idx + 1}`,
-              favicon: getFaviconUrl(article.site),
-              url: article.site || sourceUrl,
-              content: `${article.summary || "No summary available"}\n\nFull URL: ${article.site || sourceUrl || "No URL available"}`
-            };
-          });
-        } else if (metadata && metadata.fromPDF) {
-          sections = [
-            {
-              title: `PDF: ${sourceUrl}`,
-              favicon: null,
-              content: sourceContent.slice(0, 5000) || "No content available"
-            }
-          ];
-        } else if (metadata && metadata.fromYouTube) {
-          const videoMetadata = metadata.metadata || metadata;
-          sections = [
-            { title: "Video Title", favicon: null, content: videoMetadata.title || "Unknown" },
-            { title: "Channel", favicon: null, content: videoMetadata.channel_name || "Unknown" },
-            { title: "Language", favicon: null, content: videoMetadata.language || "Unknown" },
-            { title: "Generated Transcript", favicon: null, content: videoMetadata.is_generated ? "Yes" : "No" },
-            {
-              title: "Source URL",
-              favicon: getFaviconUrl(sourceUrl),
-              url: sourceUrl,
-              content: sourceUrl
-            },
-            { title: "Transcript", favicon: null, content: sourceContent }
-          ];
-        } else {
-          sections = [
-            {
-              title: sourceUrl ? new URL(sourceUrl).hostname : "Source",
-              favicon: getFaviconUrl(sourceUrl),
-              url: sourceUrl,
-              content: `Full URL: ${sourceUrl}\n\n${sourceContent || sourceUrl}`
-            }
-          ];
-        }
-
-        if (images && images.length > 0) {
-          sections.push({
-            title: "Images",
-            favicon: null,
-            content: images.map(img => `[${img}](${img})`).join('\n')
-          });
-        }
-
-        sections.forEach(sec => {
-          const details = document.createElement("details");
-          details.style.marginBottom = "8px";
-          const summary = document.createElement("summary");
-          summary.style.cursor = "pointer";
-          summary.style.fontWeight = "600";
-          summary.style.color = "var(--accent)";
-          summary.style.fontSize = "14px";
-          summary.style.display = "flex";
-          summary.style.alignItems = "center";
-          summary.style.gap = "6px";
-
-          if (sec.favicon) {
-            const faviconImg = document.createElement("img");
-            faviconImg.src = sec.favicon;
-            faviconImg.style.width = "16px";
-            faviconImg.style.height = "16px";
-            faviconImg.style.verticalAlign = "middle";
-            faviconImg.onerror = () => {
-              faviconImg.style.display = "none";
-              const fallbackIcon = document.createElement("i");
-              fallbackIcon.className = "fas fa-globe";
-              fallbackIcon.style.fontSize = "14px";
-              summary.insertBefore(fallbackIcon, faviconImg);
-            };
-            summary.appendChild(faviconImg);
-          } else if (metadata && metadata.fromPDF) {
-            const pdfIcon = document.createElement("i");
-            pdfIcon.className = "fas fa-file-pdf";
-            pdfIcon.style.fontSize = "14px";
-            summary.appendChild(pdfIcon);
-          } else if (metadata && metadata.fromYouTube) {
-            const ytIcon = document.createElement("i");
-            ytIcon.className = "fab fa-youtube";
-            ytIcon.style.fontSize = "14px";
-            summary.appendChild(ytIcon);
-          } else {
-            const defaultIcon = document.createElement("i");
-            defaultIcon.className = "fas fa-globe";
-            defaultIcon.style.fontSize = "14px";
-            summary.appendChild(defaultIcon);
-          }
-
-          if (sec.url) {
-            const link = document.createElement("a");
-            link.href = sec.url;
-            link.target = "_blank";
-            link.rel = "noopener noreferrer";
-            link.textContent = sec.title;
-            link.style.color = "var(--accent)";
-            link.style.textDecoration = "underline";
-            link.addEventListener('click', (e) => e.stopPropagation());
-            summary.appendChild(link);
-          } else {
-            const titleSpan = document.createElement("span");
-            titleSpan.textContent = sec.title;
-            summary.appendChild(titleSpan);
-          }
-
-          details.appendChild(summary);
-          const contentDiv = document.createElement("div");
-          contentDiv.style.padding = "6px 10px";
-          contentDiv.style.fontSize = "13px";
-          contentDiv.style.color = "var(--text)";
-          contentDiv.style.whiteSpace = "pre-wrap";
-          contentDiv.innerHTML = sanitizeAndRenderMarkdown(sec.content);
-          highlightCodeBlocks(contentDiv);
-          details.appendChild(contentDiv);
-          modalContentEl.appendChild(details);
-        });
-
-        modalEl.classList.add("active");
-        modalOverlay.classList.add("active");
-      });
-
-      modalOverlay.addEventListener("click", () => {
-        modalEl.classList.remove("active");
-        modalOverlay.classList.remove("active");
-        settingsModal.classList.remove("active");
-        imageModal.classList.remove("active");
-      });
-      controls.appendChild(sourcesWrapper);
-    }
-
-    if (!wrapper.dataset.messageId) {
-    wrapper.dataset.messageId = `msg-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
-    }
-  }
-
-  addPreCopyButtons(bubble);
-  checkScroll();
-  return { wrapper, bubble, textContainer, controls };
+    addPreCopyButtons(bubble);
+    checkScroll();
+    return {
+        wrapper,
+        bubble,
+        textContainer,
+        controls
+    };
 }
 
 function setSending(isSending) {
-  inputEl.disabled = isSending;
-  if (isSending) {
-    sendBtn.classList.add("stop");
-    sendBtn.querySelector(".send-icon").style.display = "none";
-    sendBtn.querySelector(".stop-icon").style.display = "inline";
-    sendBtn.setAttribute("aria-label", "Stop generation");
-  } else {
-    sendBtn.classList.remove("stop");
-    sendBtn.querySelector(".send-icon").style.display = "inline";
-    sendBtn.querySelector(".stop-icon").style.display = "none";
-    sendBtn.setAttribute("aria-label", "Send message");
-  }
+    inputEl.disabled = isSending;
+    if (isSending) {
+        sendBtn.classList.add("stop");
+        sendBtn.querySelector(".send-icon").style.display = "none";
+        sendBtn.querySelector(".stop-icon").style.display = "inline";
+        sendBtn.setAttribute("aria-label", "Stop generation");
+    } else {
+        sendBtn.classList.remove("stop");
+        sendBtn.querySelector(".send-icon").style.display = "inline";
+        sendBtn.querySelector(".stop-icon").style.display = "none";
+        sendBtn.setAttribute("aria-label", "Send message");
+    }
 }
 
 inputEl.addEventListener("keydown", (e) => {
-  if (e.key === "Enter" && !e.shiftKey) {
-    e.preventDefault();
-    sendMessage();
-  }
+    if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+    }
 });
 
 sendBtn.addEventListener("click", debounce(() => sendMessage(false), 200));
 
 modalOverlay.addEventListener("click", () => {
-  modalEl.classList.remove("active");
-  modalOverlay.classList.remove("active");
-  settingsModal.classList.remove("active");
-  imageModal.classList.remove("active");
+    modalEl.classList.remove("active");
+    modalOverlay.classList.remove("active");
+    settingsModal.classList.remove("active");
+    imageModal.classList.remove("active");
 });
 
 function formatWebsearchResponse(data) {
-  if (data.error) {
-    return `⚠️ Error: ${data.error}`;
-  }
+    if (data.error) {
+        return `⚠️ Error: ${data.error}`;
+    }
 
-  let markdown = `### Web Search Results\n`;
-  if (Array.isArray(data) && data.length > 0) {
-    data.forEach((result, idx) => {
-      if (result.site) {
-        try {
-          const hostname = new URL(result.site).hostname;
-          markdown += `- **Result ${idx + 1}**: [${hostname}](${result.site})\n`;
-        } catch (e) {
-          markdown += `- **Result ${idx + 1}**: [Invalid URL](${result.site})\n`;
-        }
-        markdown += `  ${result.summary || "No summary available."}\n`;
-        if (result.images && Array.isArray(result.images) && result.images.length > 0) {
-          markdown += `  **Images**:\n`;
-          result.images.forEach((img, imgIdx) => {
-            markdown += `  - ![Image ${imgIdx + 1}](${img})\n`;
-          });
-        }
-      } else {
-        markdown += `- **Result ${idx + 1}**: No URL available\n`;
-        markdown += `  ${result.summary || "No summary available."}\n`;
-        if (result.images && Array.isArray(result.images) && result.images.length > 0) {
-          markdown += `  **Images**:\n`;
-          result.images.forEach((img, imgIdx) => {
-            markdown += `  - ![Image ${imgIdx + 1}](${img})\n`;
-          });
-        }
-      }
-    });
-  } else {
-    markdown += `No search results found.\n`;
-  }
+    let markdown = `### Web Search Results\n`;
+    if (Array.isArray(data) && data.length > 0) {
+        data.forEach((result, idx) => {
+            if (result.site) {
+                try {
+                    const hostname = new URL(result.site).hostname;
+                    markdown += `- **Result ${idx + 1}**: [${hostname}](${result.site})\n`;
+                } catch (e) {
+                    markdown += `- **Result ${idx + 1}**: [Invalid URL](${result.site})\n`;
+                }
+                markdown += `  ${result.summary || "No summary available."}\n`;
+                if (result.images && Array.isArray(result.images) && result.images.length > 0) {
+                    markdown += `  **Images**:\n`;
+                    result.images.forEach((img, imgIdx) => {
+                        markdown += `  - ![Image ${imgIdx + 1}](${img})\n`;
+                    });
+                }
+            } else {
+                markdown += `- **Result ${idx + 1}**: No URL available\n`;
+                markdown += `  ${result.summary || "No summary available."}\n`;
+                if (result.images && Array.isArray(result.images) && result.images.length > 0) {
+                    markdown += `  **Images**:\n`;
+                    result.images.forEach((img, imgIdx) => {
+                        markdown += `  - ![Image ${imgIdx + 1}](${img})\n`;
+                    });
+                }
+            }
+        });
+    } else {
+        markdown += `No search results found.\n`;
+    }
 
-  markdown += `\n**Source**: SearxNG Web Search`;
-  return markdown;
+    markdown += `\n**Source**: SearxNG Web Search`;
+    return markdown;
 }
 
 function formatWeatherResponse(data) {
-  if (data.error) {
-    return `⚠️ Weather Error: ${data.error}`;
-  }
-
-  const { city, timezone, current, forecast, uv, air_quality, source } = data;
-
-  let markdown = `### Weather in ${city || "Unknown"} (${timezone || "N/A"})\n`;
-
-  markdown += `**Current Conditions**\n`;
-  markdown += `- **Temperature**: ${current.temperature || "N/A"} °C\n`;
-  markdown += `- **Condition**: ${current.weather_description || "N/A"} ${current.emoji || ""}\n`;
-  markdown += `- **Humidity**: ${current.humidity ? current.humidity + "%" : "N/A"}\n`;
-  markdown += `- **Wind Speed**: ${current.wind_speed ? current.wind_speed + " km/h" : "N/A"}\n\n`;
-
-  if (uv) {
-    markdown += `**UV Index**\n`;
-    markdown += `- **Current UV**: ${uv.current_uv || "N/A"}\n`;
-    markdown += `- **Daily Max UV**: ${uv.uv_index_max || "N/A"}\n`;
-    markdown += `- **UV Band**: ${uv.uv_band.band || "N/A"}\n`;
-    if (uv.uv_band.advice) {
-      markdown += `- **Advice**: ${uv.uv_band.advice}\n`;
+    if (data.error) {
+        return `⚠️ Weather Error: ${data.error}`;
     }
-    markdown += `\n`;
-  }
 
-  if (air_quality) {
-    markdown += `**Air Quality**\n`;
-    markdown += `- **PM2.5**: ${air_quality.pm2_5 ? air_quality.pm2_5 + " µg/m³" : "N/A"}\n`;
-    markdown += `- **PM10**: ${air_quality.pm10 ? air_quality.pm10 + " µg/m³" : "N/A"}\n`;
-    markdown += `- **Nitrogen Dioxide**: ${air_quality.nitrogen_dioxide ? air_quality.nitrogen_dioxide + " µg/m³" : "N/A"}\n`;
-    markdown += `- **Ozone**: ${air_quality.ozone ? air_quality.ozone + " µg/m³" : "N/A"}\n`;
-    markdown += `- **Sulphur Dioxide**: ${air_quality.sulphur_dioxide ? air_quality.sulphur_dioxide + " µg/m³" : "N/A"}\n`;
-    markdown += `- **European AQI**: ${air_quality.european_aqi || "N/A"}\n`;
-    markdown += `- **PM2.5 Advisory**: ${air_quality.advisory.level || "N/A"}\n`;
-    if (air_quality.advisory.message) {
-      markdown += `- **Recommendation**: ${air_quality.advisory.message}\n`;
+    const {
+        city,
+        timezone,
+        current,
+        forecast,
+        uv,
+        air_quality,
+        source
+    } = data;
+
+    let markdown = `### Weather in ${city || "Unknown"} (${timezone || "N/A"})\n`;
+
+    markdown += `**Current Conditions**\n`;
+    markdown += `- **Temperature**: ${current.temperature || "N/A"} °C\n`;
+    markdown += `- **Condition**: ${current.weather_description || "N/A"} ${current.emoji || ""}\n`;
+    markdown += `- **Humidity**: ${current.humidity ? current.humidity + "%" : "N/A"}\n`;
+    markdown += `- **Wind Speed**: ${current.wind_speed ? current.wind_speed + " km/h" : "N/A"}\n\n`;
+
+    if (uv) {
+        markdown += `**UV Index**\n`;
+        markdown += `- **Current UV**: ${uv.current_uv || "N/A"}\n`;
+        markdown += `- **Daily Max UV**: ${uv.uv_index_max || "N/A"}\n`;
+        markdown += `- **UV Band**: ${uv.uv_band.band || "N/A"}\n`;
+        if (uv.uv_band.advice) {
+            markdown += `- **Advice**: ${uv.uv_band.advice}\n`;
+        }
+        markdown += `\n`;
     }
-    markdown += `\n`;
-  }
 
-  if (forecast && forecast.length > 0) {
-    markdown += `**7-Day Forecast**\n`;
-    markdown += `| Date | Max Temp (°C) | Min Temp (°C) | Condition | Wind (km/h) | Precipitation (mm) | Humidity Range (%) |\n`;
-    markdown += `|------|---------------|---------------|-----------|-------------|-------------------|-------------------|\n`;
-    forecast.forEach(f => {
-      const humidityRange = f.humidity_min && f.humidity_max ? `${f.humidity_min}-${f.humidity_max}` : "N/A";
-      markdown += `| ${f.date || "N/A"} | ${f.temperature_max || "N/A"} | ${f.temperature_min || "N/A"} | ${f.weather_description || "N/A"} ${f.emoji || ""} | ${f.wind_speed_max || "N/A"} | ${f.precipitation || "N/A"} | ${humidityRange} |\n`;
-    });
-    markdown += `\n`;
-  }
+    if (air_quality) {
+        markdown += `**Air Quality**\n`;
+        markdown += `- **PM2.5**: ${air_quality.pm2_5 ? air_quality.pm2_5 + " µg/m³" : "N/A"}\n`;
+        markdown += `- **PM10**: ${air_quality.pm10 ? air_quality.pm10 + " µg/m³" : "N/A"}\n`;
+        markdown += `- **Nitrogen Dioxide**: ${air_quality.nitrogen_dioxide ? air_quality.nitrogen_dioxide + " µg/m³" : "N/A"}\n`;
+        markdown += `- **Ozone**: ${air_quality.ozone ? air_quality.ozone + " µg/m³" : "N/A"}\n`;
+        markdown += `- **Sulphur Dioxide**: ${air_quality.sulphur_dioxide ? air_quality.sulphur_dioxide + " µg/m³" : "N/A"}\n`;
+        markdown += `- **European AQI**: ${air_quality.european_aqi || "N/A"}\n`;
+        markdown += `- **PM2.5 Advisory**: ${air_quality.advisory.level || "N/A"}\n`;
+        if (air_quality.advisory.message) {
+            markdown += `- **Recommendation**: ${air_quality.advisory.message}\n`;
+        }
+        markdown += `\n`;
+    }
 
-  markdown += `**Source**: [${source}](https://open-meteo.com/)`;
-  return markdown;
+    if (forecast && forecast.length > 0) {
+        markdown += `**7-Day Forecast**\n`;
+        markdown += `| Date | Max Temp (°C) | Min Temp (°C) | Condition | Wind (km/h) | Precipitation (mm) | Humidity Range (%) |\n`;
+        markdown += `|------|---------------|---------------|-----------|-------------|-------------------|-------------------|\n`;
+        forecast.forEach(f => {
+            const humidityRange = f.humidity_min && f.humidity_max ? `${f.humidity_min}-${f.humidity_max}` : "N/A";
+            markdown += `| ${f.date || "N/A"} | ${f.temperature_max || "N/A"} | ${f.temperature_min || "N/A"} | ${f.weather_description || "N/A"} ${f.emoji || ""} | ${f.wind_speed_max || "N/A"} | ${f.precipitation || "N/A"} | ${humidityRange} |\n`;
+        });
+        markdown += `\n`;
+    }
+
+    markdown += `**Source**: [${source}](https://open-meteo.com/)`;
+    return markdown;
 }
 
 function formatNewsResponse(data) {
-  if (data.error) {
-    return `⚠️ Error: ${data.error}`;
-  }
+    if (data.error) {
+        return `⚠️ Error: ${data.error}`;
+    }
 
-  const { top_summary, articles } = data;
+    const {
+        top_summary,
+        articles
+    } = data;
 
-  let markdown = `### News Summary\n`;
-  markdown += `${top_summary || "No summary available."}\n\n`;
+    let markdown = `### News Summary\n`;
+    markdown += `${top_summary || "No summary available."}\n\n`;
 
-  if (articles && articles.length > 0) {
-    markdown += `**Recent Articles**\n`;
-    articles.forEach((article, idx) => {
-      if (article.site) {
-        try {
-          const hostname = new URL(article.site).hostname;
-          markdown += `- **Article ${idx + 1}**: [${hostname}](${article.site})\n`;
-        } catch (e) {
-          markdown += `- **Article ${idx + 1}**: [Invalid URL](${article.site})\n`;
-        }
-        markdown += `  ${article.summary || "No summary available."}\n`;
-        if (article.images && article.images.length > 0) {
-          markdown += `  **Images**:\n`;
-          article.images.forEach((img, imgIdx) => {
-            markdown += `  - ![Image ${imgIdx + 1}](${img})\n`;
-          });
-        }
-      } else {
-        markdown += `- **Article ${idx + 1}**: No URL available\n`;
-        markdown += `  ${article.summary || "No summary available."}\n`;
-        if (article.images && Array.isArray(article.images) && article.images.length > 0) {
-          markdown += `  **Images**:\n`;
-          article.images.forEach((img, imgIdx) => {
-            markdown += `  - ![Image ${imgIdx + 1}](${img})\n`;
-          });
-        }
-      }
-    });
-    markdown += `\n`;
-  } else {
-    markdown += `No articles found.\n\n`;
-  }
+    if (articles && articles.length > 0) {
+        markdown += `**Recent Articles**\n`;
+        articles.forEach((article, idx) => {
+            if (article.site) {
+                try {
+                    const hostname = new URL(article.site).hostname;
+                    markdown += `- **Article ${idx + 1}**: [${hostname}](${article.site})\n`;
+                } catch (e) {
+                    markdown += `- **Article ${idx + 1}**: [Invalid URL](${article.site})\n`;
+                }
+                markdown += `  ${article.summary || "No summary available."}\n`;
+                if (article.images && article.images.length > 0) {
+                    markdown += `  **Images**:\n`;
+                    article.images.forEach((img, imgIdx) => {
+                        markdown += `  - ![Image ${imgIdx + 1}](${img})\n`;
+                    });
+                }
+            } else {
+                markdown += `- **Article ${idx + 1}**: No URL available\n`;
+                markdown += `  ${article.summary || "No summary available."}\n`;
+                if (article.images && Array.isArray(article.images) && article.images.length > 0) {
+                    markdown += `  **Images**:\n`;
+                    article.images.forEach((img, imgIdx) => {
+                        markdown += `  - ![Image ${imgIdx + 1}](${img})\n`;
+                    });
+                }
+            }
+        });
+        markdown += `\n`;
+    } else {
+        markdown += `No articles found.\n\n`;
+    }
 
-  markdown += `**Source**: SearxNG News Search`;
-  return markdown;
+    markdown += `**Source**: SearxNG News Search`;
+    return markdown;
 }
 
 let abortController = null;
 
 async function sendMessage(isRetry = false) {
-  const text = (inputEl.value || "").trim();
-  if (!text && !isRetry) return;
+    const text = (inputEl.value || "").trim();
+    if (!text && !isRetry) return;
 
-  let messageId = null;
-  let displayText = text;
-  let pdfSourceUrl = "";
-  let pdfSourceContent = "";
-  let pdfMetadata = null;
+    let messageId = null;
+    let displayText = text;
+    let pdfSourceUrl = "";
+    let pdfSourceContent = "";
+    let pdfMetadata = null;
 
-  if (pendingPdf && !isRetry) {
-    displayText = `**~${pendingPdf.filename}**\n\n${text}`;
-    pdfSourceUrl = pendingPdf.filename;
-    pdfSourceContent = pendingPdf.text;
-    pdfMetadata = { fromPDF: true };
-  }
+    if (pendingPdf && !isRetry) {
+        displayText = `**~${pendingPdf.filename}**\n\n${text}`;
+        pdfSourceUrl = pendingPdf.filename;
+        pdfSourceContent = pendingPdf.text;
+        pdfMetadata = {
+            fromPDF: true
+        };
+    }
 
-  if (isRetry) {
-    console.log("Processing retry, currentChat:", JSON.stringify(currentChat));
-    const lastUserMessageIndex = [...currentChat].reverse().findIndex(m => m.role === "user");
-    if (lastUserMessageIndex !== -1) {
-      messageId = currentChat[currentChat.length - 1 - lastUserMessageIndex].id;
-      displayText = currentChat[currentChat.length - 1 - lastUserMessageIndex].content;
+    if (isRetry) {
+        console.log("Processing retry, currentChat:", JSON.stringify(currentChat));
+        const lastUserMessageIndex = [...currentChat].reverse().findIndex(m => m.role === "user");
+        if (lastUserMessageIndex !== -1) {
+            messageId = currentChat[currentChat.length - 1 - lastUserMessageIndex].id;
+            displayText = currentChat[currentChat.length - 1 - lastUserMessageIndex].content;
+        } else {
+            console.warn("No user message found for retry");
+            addBubble("⚠️ Error: No user message found for retry.", "bot");
+            setSending(false);
+            inputEl.focus();
+            return;
+        }
     } else {
-      console.warn("No user message found for retry");
-      addBubble("⚠️ Error: No user message found for retry.", "bot");
-      setSending(false);
-      inputEl.focus();
-      return;
-    }
-  } else {
-    const bubble = addBubble(displayText, "user");
-    messageId = bubble.wrapper.dataset.messageId;
-    currentChat.push({ role: "user", content: text, id: messageId });
-    console.log("Added user message to currentChat:", { role: "user", content: text, id: messageId });
-  }
-
-  inputEl.value = "";
-  inputEl.placeholder = pendingPdf ? `Ask about ${pendingPdf.filename}...` : "Ask anything...";
-  setSending(true);
-
-  const thinkingBubble = addBubble("Thinking", "thinking");
-
-  if (pendingPdf && !isRetry) {
-    const systemPrompt = `You are an AI assistant with access to the following PDF document:\n\n----- PDF CONTENT START -----\n${pendingPdf.text}\n----- PDF CONTENT END -----\n\nYour task:\n- Answer questions strictly based on this document.\n- Provide detailed explanations and well-structured responses.\n- Include relevant sections or quotes when needed.\n- If asked something outside the PDF, politely say you don’t know.`;
-    currentChat = currentChat.filter(m => m.role !== "system");
-    const systemMessage = { role: "system", content: systemPrompt, id: `system-${Date.now()}` };
-    currentChat.push(systemMessage);
-    currentContextLength = calculateChatTokens();
-    updateProgressBar(currentContextLength, maxContextLength);
-    console.log("Added PDF system message to currentChat:", JSON.stringify(currentChat, null, 2));
-    pendingPdf = null;
-  }
-
-  abortController = new AbortController();
-
-  const originalSendHandler = () => sendMessage(false);
-  sendBtn.removeEventListener("click", originalSendHandler);
-  console.log("Removed original send handler");
-  const stopHandler = () => {
-    if (abortController) {
-      abortController.abort();
-      abortController = null;
-      setSending(false);
-      thinkingBubble.wrapper.remove();
-      sendBtn.removeEventListener("click", stopHandler);
-      sendBtn.addEventListener("click", originalSendHandler);
-      inputEl.focus();
-    }
-  };
-  sendBtn.addEventListener("click", stopHandler);
-
-  try {
-    let augmentedMessages = [...currentChat];
-    let sourceUrl = "";
-    let crawledText = "";
-    let metadata = null;
-    let images = [];
-    const detectedUrl = extractUrl(text);
-    const youtubeId = detectedUrl ? extractYouTubeId(detectedUrl) : null;
-    let embedUrl = youtubeId ? `https://www.youtube.com/embed/${youtubeId}` : "";
-
-    const weatherRegex = /(?:weather|forecast|whather|wheather)\s+(?:in|at|for)\s+([\w\s]+)/i;
-    const weatherMatch = text.match(weatherRegex);
-    const newsRegex = /news\s+(?:about|on|in|regarding)\s+([\w\s]+)/i;
-    const newsMatch = text.match(newsRegex);
-    const searchRegex = /search\s+(?:for|about)\s+([\w\s]+)/i;
-    const searchMatch = text.match(searchRegex);
-
-    if (weatherMatch) {
-      const city = weatherMatch[1].trim();
-      const weatherBubble = addBubble("Searching weather...", "bot");
-      let weatherText = "";
-      try {
-        const weatherRes = await fetch(WEATHER_ENDPOINT, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ city }),
-          signal: abortController.signal
+        const bubble = addBubble(displayText, "user");
+        messageId = bubble.wrapper.dataset.messageId;
+        currentChat.push({
+            role: "user",
+            content: text,
+            id: messageId
         });
-        const weatherData = await weatherRes.json();
+        console.log("Added user message to currentChat:", {
+            role: "user",
+            content: text,
+            id: messageId
+        });
+    }
 
-        if (weatherData.error) {
-          weatherBubble.wrapper.remove();
-          thinkingBubble.wrapper.remove();
-          addBubble(`⚠️ Weather Error: ${weatherData.error}`, "bot");
-          return;
-        }
+    inputEl.value = "";
+    inputEl.placeholder = pendingPdf ? `Ask about ${pendingPdf.filename}...` : "Ask anything...";
+    setSending(true);
 
-        weatherText = formatWeatherResponse(weatherData);
+    const thinkingBubble = addBubble("Thinking", "thinking");
+
+    if (pendingPdf && !isRetry) {
+        const systemPrompt = `You are an AI assistant with access to the following PDF document:\n\n----- PDF CONTENT START -----\n${pendingPdf.text}\n----- PDF CONTENT END -----\n\nYour task:\n- Answer questions strictly based on this document.\n- Provide detailed explanations and well-structured responses.\n- Include relevant sections or quotes when needed.\n- If asked something outside the PDF, politely say you don’t know.`;
+        currentChat = currentChat.filter(m => m.role !== "system");
         const systemMessage = {
-          role: "system",
-          content: systemPrompts.weather.replace("{weather_data}", weatherText),
-          id: `system-${Date.now()}`
-        };
-        currentChat = [
-          ...currentChat.slice(0, -1),
-          systemMessage,
-          currentChat[currentChat.length - 1]
-        ];
-        augmentedMessages = [
-          ...currentChat.slice(0, -1),
-          systemMessage,
-          currentChat[currentChat.length - 1]
-        ];
-        sourceUrl = "https://open-meteo.com/";
-        crawledText = weatherText;
-        metadata = { fromWeather: true };
-        currentContextLength = calculateChatTokens();
-        updateProgressBar(currentContextLength, maxContextLength);
-        console.log("currentChat after adding system message:", JSON.stringify(currentChat, null, 2));
-      } catch (err) {
-        if (err.name === "AbortError") return;
-        weatherBubble.wrapper.remove();
-        thinkingBubble.wrapper.remove();
-        addBubble(`⚠️ Weather Error: ${err.message}`, "bot");
-        setSending(false);
-        inputEl.focus();
-        return;
-      } finally {
-        try { weatherBubble.wrapper.remove(); } catch (e) {}
-      }
-    } else if (newsMatch) {
-  const topic = newsMatch[1].trim();
-  const newsBubble = addBubble("Searching News...", "bot");
-  let newsText = "";
-  try {
-    const newsRes = await fetch(NEWS_ENDPOINT, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ query: topic }),
-      signal: abortController.signal
-    });
-    const newsData = await newsRes.json();
-
-    if (newsData.error) {
-      newsBubble.wrapper.remove();
-      thinkingBubble.wrapper.remove();
-      addBubble(`⚠️ News Error: ${newsData.error}`, "bot");
-      return;
-    }
-
-    if (!newsData.articles || !Array.isArray(newsData.articles)) {
-      newsBubble.wrapper.remove();
-      thinkingBubble.wrapper.remove();
-      addBubble(`⚠️ News Error: Invalid or empty articles data`, "bot");
-      return;
-    }
-
-    // Structure images with sourceUrl for each article
-    images = newsData.articles.reduce((acc, article) => {
-      if (article.images && Array.isArray(article.images)) {
-        return [...acc, ...article.images.map(img => ({
-          url: img,
-          sourceUrl: article.site || "" // Associate each image with its article's source URL
-        }))];
-      }
-      return acc;
-    }, []);
-
-    newsText = formatNewsResponse(newsData);
-    const systemMessage = {
-      role: "system",
-      content: systemPrompts.news.replace("{news_data}", JSON.stringify(newsData)),
-      id: `system-${Date.now()}`
-    };
-    currentChat = [
-      ...currentChat.slice(0, -1),
-      systemMessage,
-      currentChat[currentChat.length - 1]
-    ];
-    augmentedMessages = [
-      ...currentChat.slice(0, -1),
-      systemMessage,
-      currentChat[currentChat.length - 1]
-    ];
-    sourceUrl = "SearxNG News Search";
-    crawledText = JSON.stringify(newsData);
-    metadata = { fromNews: true };
-    currentContextLength = calculateChatTokens();
-    updateProgressBar(currentContextLength, maxContextLength);
-    console.log("currentChat after adding news system message:", JSON.stringify(currentChat, null, 2));
-  } catch (err) {
-    if (err.name === "AbortError") return;
-    newsBubble.wrapper.remove();
-    thinkingBubble.wrapper.remove();
-    addBubble(`⚠️ News Error: ${err.message}`, "bot");
-    setSending(false);
-    inputEl.focus();
-    return;
-  } finally {
-    try { newsBubble.wrapper.remove(); } catch (e) {}
-  }
-} else if (searchMatch) {
-      const query = searchMatch[1].trim();
-      const searchBubble = addBubble("Searching...", "bot");
-      let searchText = "";
-      try {
-        const searchRes = await fetch(WEBSEARCH_ENDPOINT, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ query }),
-          signal: abortController.signal
-        });
-        const searchData = await searchRes.json();
-
-        if (searchData.error) {
-          searchBubble.wrapper.remove();
-          thinkingBubble.wrapper.remove();
-          addBubble(`⚠️ Search Error: ${searchData.error}`, "bot");
-          return;
-        }
-
-        if (!Array.isArray(searchData)) {
-          searchBubble.wrapper.remove();
-          thinkingBubble.wrapper.remove();
-          addBubble(`⚠️ Search Error: Invalid or empty search data`, "bot");
-          return;
-        }
-
-        images = searchData.reduce((acc, result) => {
-          if (result.images && Array.isArray(result.images)) {
-            return [...acc, ...result.images];
-          }
-          return acc;
-        }, []);
-
-        searchText = formatWebsearchResponse(searchData);
-        const systemMessage = {
-          role: "system",
-          content: systemPrompts.websearch.replace("{search_data}", JSON.stringify(searchData)),
-          id: `system-${Date.now()}`
-        };
-        currentChat = [
-          ...currentChat.slice(0, -1),
-          systemMessage,
-          currentChat[currentChat.length - 1]
-        ];
-        augmentedMessages = [
-          ...currentChat.slice(0, -1),
-          systemMessage,
-          currentChat[currentChat.length - 1]
-        ];
-        sourceUrl = "SearxNG Web Search";
-        crawledText = JSON.stringify(searchData);
-        metadata = { fromWebSearch: true, resultCount: searchData.length };
-        currentContextLength = calculateChatTokens();
-        updateProgressBar(currentContextLength, maxContextLength);
-        console.log("currentChat after adding websearch system message:", JSON.stringify(currentChat, null, 2));
-      } catch (err) {
-        if (err.name === "AbortError") return;
-        searchBubble.wrapper.remove();
-        thinkingBubble.wrapper.remove();
-        addBubble(`⚠️ Search Error: ${err.message}`, "bot");
-        setSending(false);
-        inputEl.focus();
-        return;
-      } finally {
-        try { searchBubble.wrapper.remove(); } catch (e) {}
-      }
-    } else if (websearchEnabled && !detectedUrl) {
-      const searchBubble = addBubble("Searching...", "bot");
-      try {
-        const searchRes = await fetch(WEBSEARCH_ENDPOINT, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ query: text }),
-          signal: abortController.signal
-        });
-        let searchData = await searchRes.json();
-        if (searchRes.ok && Array.isArray(searchData) && searchData.length > 0) {
-          images = searchData.reduce((acc, result) => {
-            if (result.images && Array.isArray(result.images)) {
-              return [...acc, ...result.images];
-            }
-            return acc;
-          }, []);
-
-          const searchContext = formatWebsearchResponse(searchData);
-          const systemMessage = {
             role: "system",
-            content: systemPrompts.websearch.replace("{search_data}", searchContext),
+            content: systemPrompt,
             id: `system-${Date.now()}`
-          };
-          currentChat = [
-            ...currentChat.slice(0, -1),
-            systemMessage,
-            currentChat[currentChat.length - 1]
-          ];
-          augmentedMessages = [
-            ...currentChat.slice(0, -1),
-            systemMessage,
-            currentChat[currentChat.length - 1]
-          ];
-          sourceUrl = "SearxNG Web Search";
-          crawledText = JSON.stringify(searchData);
-          metadata = { fromWebSearch: true, resultCount: searchData.length };
-          currentContextLength = calculateChatTokens();
-          updateProgressBar(currentContextLength, maxContextLength);
-          console.log("currentChat after adding implicit websearch system message:", JSON.stringify(currentChat, null, 2));
-        }
-      } catch (err) {
-        if (err.name === "AbortError") return;
-        console.error("Websearch error:", err?.message || err);
-      } finally {
-        try { searchBubble.wrapper.remove(); } catch (e) {}
-      }
-    } else if (detectedUrl && !isCodeInput(text)) {
-      const crawlBubble = addBubble("Searching...", "bot");
-      try {
-        let endpoint = CRAWL_ENDPOINT;
-        let isYouTube = false;
-        if (detectedUrl.includes("youtube.com/watch?v=") || detectedUrl.includes("youtu.be/")) {
-          endpoint = YOUTUBE_ENDPOINT;
-          isYouTube = true;
-        }
-
-        console.log("Crawling URL:", detectedUrl, "Endpoint:", endpoint);
-        const crawlRes = await fetch(endpoint, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ query: detectedUrl }),
-          signal: abortController.signal
-        });
-        let crawlData = await crawlRes.json();
-        console.log("Crawl response:", crawlData);
-        if (crawlRes.ok && crawlData && crawlData.content) {
-          crawledText = String(crawlData.content).slice(0, 100000);
-          sourceUrl = crawlData.url || detectedUrl;
-          metadata = crawlData.metadata || null;
-          images = crawlData.images || [];
-          console.log("Images extracted:", images);
-          const systemMessage = {
-            role: "system",
-            content: isYouTube
-              ? systemPrompts.youtube.replace("{content}", crawledText).replace("{metadata}", JSON.stringify(metadata))
-              : systemPrompts.crawl.replace("{content}", crawledText).replace("{metadata}", JSON.stringify(metadata)),
-            id: `system-${Date.now()}`
-          };
-          currentChat = [
-            ...currentChat.slice(0, -1),
-            systemMessage,
-            currentChat[currentChat.length - 1]
-          ];
-          augmentedMessages = [
-            ...currentChat.slice(0, -1),
-            systemMessage,
-            currentChat[currentChat.length - 1]
-          ];
-          if (isYouTube && metadata) {
-            metadata.fromYouTube = true;
-          }
-          currentContextLength = calculateChatTokens();
-          updateProgressBar(currentContextLength, maxContextLength);
-          console.log("currentChat after adding crawl/youtube system message:", JSON.stringify(currentChat, null, 2));
-        }
-        // If no content, skip crawl and proceed to LM
-      } catch (err) {
-        if (err.name === "AbortError") return;
-        console.error("Crawl error:", err?.message || err);
-        // Continue to LM without displaying crawl error
-      } finally {
-        try { crawlBubble.wrapper.remove(); } catch (e) {}
-      }
-    }
-
-    // Add code-specific prompt if input is code
-    if (isCodeInput(text)) {
-  const codePrompt = systemPrompts.code.replace("{content}", text);
-  const systemMessage = { role: "system", content: codePrompt, id: `system-${Date.now()}` };
-  currentChat = [
-    ...currentChat.slice(0, -1),
-    systemMessage,
-    currentChat[currentChat.length - 1]
-  ];
-  augmentedMessages = [
-    ...currentChat.slice(0, -1),
-    systemMessage,
-    currentChat[currentChat.length - 1]
-  ];
-  currentContextLength = calculateChatTokens();
-  updateProgressBar(currentContextLength, maxContextLength);
-  console.log("currentChat after adding code system message:", JSON.stringify(currentChat, null, 2));
-}
-
-    const hasSources = !!(crawledText || sourceUrl || (pdfSourceUrl && pdfSourceContent));
-    const finalSourceUrl = pdfSourceUrl || sourceUrl;
-    const finalSourceContent = pdfSourceContent || crawledText;
-    const finalMetadata = pdfMetadata || metadata;
-
-    let botBubble = null;
-
-    const streamResponse = await fetch(LM_ENDPOINT, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model: currentModel,
-        messages: augmentedMessages,
-        stream: true
-      }),
-      signal: abortController.signal
-    });
-
-    if (!streamResponse.ok) {
-      thinkingBubble.wrapper.remove();
-      addBubble("⚠️ Error: Could not reach LM Studio.", "bot");
-      setSending(false);
-      inputEl.focus();
-      sendBtn.removeEventListener("click", stopHandler);
-      sendBtn.addEventListener("click", originalSendHandler);
-      return;
-    }
-
-    const reader = streamResponse.body.getReader();
-    const decoder = new TextDecoder();
-    let accumulatedText = "";
-
-    const handleStream = async (chunk) => {
-      if (!botBubble && chunk && chunk.trim()) {
-        botBubble = addBubble("", "bot", hasSources, finalSourceUrl, finalSourceContent, finalMetadata, embedUrl, youtubeId, detectedUrl, images);
-        botBubble.wrapper.style.display = "block";
-        try { thinkingBubble.wrapper.remove(); } catch (e) { console.warn("Error removing thinking bubble:", e); }
-      }
-      if (chunk) {
-        accumulatedText += chunk;
-        if (botBubble) {
-          botBubble.textContainer.innerHTML = sanitizeAndRenderMarkdown(accumulatedText);
-          botBubble.textContainer.querySelectorAll("a").forEach(a => {
-            a.setAttribute("target", "_blank");
-            a.setAttribute("rel", "noopener noreferrer");
-          });
-          highlightCodeBlocks(botBubble.textContainer);
-          addPreCopyButtons(botBubble.bubble);
-          if (autoScroll) scrollToBottom();
-        }
-      }
-      if (!chunk && botBubble) {
-        currentChat.push({ role: "assistant", content: accumulatedText, id: botBubble.wrapper.dataset.messageId });
+        };
+        currentChat.push(systemMessage);
         currentContextLength = calculateChatTokens();
         updateProgressBar(currentContextLength, maxContextLength);
-        addPreCopyButtons(botBubble.bubble);
-        if (images && images.length > 0 && !youtubeId) {
-  const imageContainer = document.createElement("div");
-  imageContainer.className = "image-container";
-  images.forEach((imgData, idx) => {
-    const img = document.createElement("img");
-    img.src = imgData.url || imgData; // Assume imgData is { url, sourceUrl }
-    img.alt = finalMetadata && finalMetadata.fromWebSearch ? "Thumbnail from web search result" : finalMetadata && finalMetadata.fromNews ? "Thumbnail from news article" : "Thumbnail from crawled page";
-    img.className = "image-thumbnail";
-    img.setAttribute("loading", "lazy");
-    // Store only the source URL
-    img.dataset.sourceUrl = imgData.sourceUrl || finalSourceUrl || "";
-    img.addEventListener("click", () => {
-      expandedImage.src = img.src;
-      // Update source container with only the article link
-      const sourceLinkEl = document.getElementById("imageSourceLink");
-      if (img.dataset.sourceUrl) {
-        sourceLinkEl.innerHTML = `<a href="${img.dataset.sourceUrl}" target="_blank" rel="noopener noreferrer">${img.dataset.sourceUrl}</a>`;
-      } else {
-        sourceLinkEl.innerHTML = "No source URL available";
-      }
-      imageModal.classList.add("active");
-    });
-    img.onerror = () => {
-      console.warn(`Failed to load image: ${img.src}`);
-      img.style.display = "none";
-    };
-    imageContainer.appendChild(img);
-  });
-  botBubble.bubble.appendChild(imageContainer);
-}
-      }
-      if (!chunk && !botBubble) {
-        try { thinkingBubble.wrapper.remove(); } catch (e) { console.warn("Error removing thinking bubble:", e); }
-      }
-    };
+        console.log("Added PDF system message to currentChat:", JSON.stringify(currentChat, null, 2));
+        pendingPdf = null;
+    }
 
-    let done = false;
-    while (!done) {
-      try {
-        const { value, done: streamDone } = await reader.read();
-        done = streamDone;
-        if (value) {
-          const chunk = decoder.decode(value, { stream: true });
-          const lines = chunk.split("\n");
-          for (const line of lines) {
-            if (line.startsWith("data: ")) {
-              const data = line.slice(6);
-              if (data === "[DONE]") {
-                done = true;
-                break;
-              }
-              try {
-                const parsed = JSON.parse(data);
-                const content = parsed.choices?.[0]?.delta?.content || "";
-                if (content) {
-                  await handleStream(content);
+    abortController = new AbortController();
+
+    const originalSendHandler = () => sendMessage(false);
+    sendBtn.removeEventListener("click", originalSendHandler);
+    console.log("Removed original send handler");
+    const stopHandler = () => {
+        if (abortController) {
+            abortController.abort();
+            abortController = null;
+            setSending(false);
+            thinkingBubble.wrapper.remove();
+            sendBtn.removeEventListener("click", stopHandler);
+            sendBtn.addEventListener("click", originalSendHandler);
+            inputEl.focus();
+        }
+    };
+    sendBtn.addEventListener("click", stopHandler);
+
+    try {
+        let augmentedMessages = [...currentChat];
+        let sourceUrl = "";
+        let crawledText = "";
+        let metadata = null;
+        let images = [];
+        const detectedUrl = extractUrl(text);
+        const youtubeId = detectedUrl ? extractYouTubeId(detectedUrl) : null;
+        let embedUrl = youtubeId ? `https://www.youtube.com/embed/${youtubeId}` : "";
+
+        const weatherRegex = /(?:weather|forecast|whather|wheather)\s+(?:in|at|for)\s+([\w\s]+)/i;
+        const weatherMatch = text.match(weatherRegex);
+        const newsRegex = /news\s+(?:about|on|in|regarding)\s+([\w\s]+)/i;
+        const newsMatch = text.match(newsRegex);
+        const searchRegex = /search\s+(?:for|about)\s+([\w\s]+)/i;
+        const searchMatch = text.match(searchRegex);
+
+        if (weatherMatch) {
+            const city = weatherMatch[1].trim();
+            const weatherBubble = addBubble("Searching weather...", "bot");
+            let weatherText = "";
+            try {
+                const weatherRes = await fetch(WEATHER_ENDPOINT, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        city
+                    }),
+                    signal: abortController.signal
+                });
+                const weatherData = await weatherRes.json();
+
+                if (weatherData.error) {
+                    weatherBubble.wrapper.remove();
+                    thinkingBubble.wrapper.remove();
+                    addBubble(`⚠️ Weather Error: ${weatherData.error}`, "bot");
+                    return;
                 }
-              } catch (e) {
-                console.error("Error parsing stream chunk:", e);
-              }
-            }
-          }
-        }
-      } catch (err) {
-        if (err.name === "AbortError") {
-          console.log("Stream aborted");
-          return;
-        }
-        console.error("Stream error:", err);
-        break;
-      }
-    }
 
-    await handleStream("");
-  } catch (err) {
-    if (err.name === "AbortError") {
-      console.log("Request aborted");
-      return;
+                weatherText = formatWeatherResponse(weatherData);
+                const systemMessage = {
+                    role: "system",
+                    content: systemPrompts.weather.replace("{weather_data}", weatherText),
+                    id: `system-${Date.now()}`
+                };
+                currentChat = [
+                    ...currentChat.slice(0, -1),
+                    systemMessage,
+                    currentChat[currentChat.length - 1]
+                ];
+                augmentedMessages = [
+                    ...currentChat.slice(0, -1),
+                    systemMessage,
+                    currentChat[currentChat.length - 1]
+                ];
+                sourceUrl = "https://open-meteo.com/";
+                crawledText = weatherText;
+                metadata = {
+                    fromWeather: true
+                };
+                currentContextLength = calculateChatTokens();
+                updateProgressBar(currentContextLength, maxContextLength);
+                console.log("currentChat after adding system message:", JSON.stringify(currentChat, null, 2));
+            } catch (err) {
+                if (err.name === "AbortError") return;
+                weatherBubble.wrapper.remove();
+                thinkingBubble.wrapper.remove();
+                addBubble(`⚠️ Weather Error: ${err.message}`, "bot");
+                setSending(false);
+                inputEl.focus();
+                return;
+            } finally {
+                try {
+                    weatherBubble.wrapper.remove();
+                } catch (e) {}
+            }
+        } else if (newsMatch) {
+            const topic = newsMatch[1].trim();
+            const newsBubble = addBubble("Searching News...", "bot");
+            let newsText = "";
+            try {
+                const newsRes = await fetch(NEWS_ENDPOINT, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        query: topic
+                    }),
+                    signal: abortController.signal
+                });
+                const newsData = await newsRes.json();
+
+                if (newsData.error) {
+                    newsBubble.wrapper.remove();
+                    thinkingBubble.wrapper.remove();
+                    addBubble(`⚠️ News Error: ${newsData.error}`, "bot");
+                    return;
+                }
+
+                if (!newsData.articles || !Array.isArray(newsData.articles)) {
+                    newsBubble.wrapper.remove();
+                    thinkingBubble.wrapper.remove();
+                    addBubble(`⚠️ News Error: Invalid or empty articles data`, "bot");
+                    return;
+                }
+
+                // Structure images with sourceUrl for each article
+                images = newsData.articles.reduce((acc, article) => {
+                    if (article.images && Array.isArray(article.images)) {
+                        return [...acc, ...article.images.map(img => ({
+                            url: img,
+                            sourceUrl: article.site || "" // Associate each image with its article's source URL
+                        }))];
+                    }
+                    return acc;
+                }, []);
+
+                newsText = formatNewsResponse(newsData);
+                const systemMessage = {
+                    role: "system",
+                    content: systemPrompts.news.replace("{news_data}", JSON.stringify(newsData)),
+                    id: `system-${Date.now()}`
+                };
+                currentChat = [
+                    ...currentChat.slice(0, -1),
+                    systemMessage,
+                    currentChat[currentChat.length - 1]
+                ];
+                augmentedMessages = [
+                    ...currentChat.slice(0, -1),
+                    systemMessage,
+                    currentChat[currentChat.length - 1]
+                ];
+                sourceUrl = "SearxNG News Search";
+                crawledText = JSON.stringify(newsData);
+                metadata = {
+                    fromNews: true
+                };
+                currentContextLength = calculateChatTokens();
+                updateProgressBar(currentContextLength, maxContextLength);
+                console.log("currentChat after adding news system message:", JSON.stringify(currentChat, null, 2));
+            } catch (err) {
+                if (err.name === "AbortError") return;
+                newsBubble.wrapper.remove();
+                thinkingBubble.wrapper.remove();
+                addBubble(`⚠️ News Error: ${err.message}`, "bot");
+                setSending(false);
+                inputEl.focus();
+                return;
+            } finally {
+                try {
+                    newsBubble.wrapper.remove();
+                } catch (e) {}
+            }
+        } else if (searchMatch) {
+            const query = searchMatch[1].trim();
+            const searchBubble = addBubble("Searching...", "bot");
+            let searchText = "";
+            try {
+                const searchRes = await fetch(WEBSEARCH_ENDPOINT, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        query
+                    }),
+                    signal: abortController.signal
+                });
+                const searchData = await searchRes.json();
+
+                if (searchData.error) {
+                    searchBubble.wrapper.remove();
+                    thinkingBubble.wrapper.remove();
+                    addBubble(`⚠️ Search Error: ${searchData.error}`, "bot");
+                    return;
+                }
+
+                if (!Array.isArray(searchData)) {
+                    searchBubble.wrapper.remove();
+                    thinkingBubble.wrapper.remove();
+                    addBubble(`⚠️ Search Error: Invalid or empty search data`, "bot");
+                    return;
+                }
+
+                images = searchData.reduce((acc, result) => {
+                    if (result.images && Array.isArray(result.images)) {
+                        return [...acc, ...result.images];
+                    }
+                    return acc;
+                }, []);
+
+                searchText = formatWebsearchResponse(searchData);
+                const systemMessage = {
+                    role: "system",
+                    content: systemPrompts.websearch.replace("{search_data}", JSON.stringify(searchData)),
+                    id: `system-${Date.now()}`
+                };
+                currentChat = [
+                    ...currentChat.slice(0, -1),
+                    systemMessage,
+                    currentChat[currentChat.length - 1]
+                ];
+                augmentedMessages = [
+                    ...currentChat.slice(0, -1),
+                    systemMessage,
+                    currentChat[currentChat.length - 1]
+                ];
+                sourceUrl = "SearxNG Web Search";
+                crawledText = JSON.stringify(searchData);
+                metadata = {
+                    fromWebSearch: true,
+                    resultCount: searchData.length
+                };
+                currentContextLength = calculateChatTokens();
+                updateProgressBar(currentContextLength, maxContextLength);
+                console.log("currentChat after adding websearch system message:", JSON.stringify(currentChat, null, 2));
+            } catch (err) {
+                if (err.name === "AbortError") return;
+                searchBubble.wrapper.remove();
+                thinkingBubble.wrapper.remove();
+                addBubble(`⚠️ Search Error: ${err.message}`, "bot");
+                setSending(false);
+                inputEl.focus();
+                return;
+            } finally {
+                try {
+                    searchBubble.wrapper.remove();
+                } catch (e) {}
+            }
+        } else if (websearchEnabled && !detectedUrl) {
+            const searchBubble = addBubble("Searching...", "bot");
+            try {
+                const searchRes = await fetch(WEBSEARCH_ENDPOINT, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        query: text
+                    }),
+                    signal: abortController.signal
+                });
+                let searchData = await searchRes.json();
+                if (searchRes.ok && Array.isArray(searchData) && searchData.length > 0) {
+                    images = searchData.reduce((acc, result) => {
+                        if (result.images && Array.isArray(result.images)) {
+                            return [...acc, ...result.images];
+                        }
+                        return acc;
+                    }, []);
+
+                    const searchContext = formatWebsearchResponse(searchData);
+                    const systemMessage = {
+                        role: "system",
+                        content: systemPrompts.websearch.replace("{search_data}", searchContext),
+                        id: `system-${Date.now()}`
+                    };
+                    currentChat = [
+                        ...currentChat.slice(0, -1),
+                        systemMessage,
+                        currentChat[currentChat.length - 1]
+                    ];
+                    augmentedMessages = [
+                        ...currentChat.slice(0, -1),
+                        systemMessage,
+                        currentChat[currentChat.length - 1]
+                    ];
+                    sourceUrl = "SearxNG Web Search";
+                    crawledText = JSON.stringify(searchData);
+                    metadata = {
+                        fromWebSearch: true,
+                        resultCount: searchData.length
+                    };
+                    currentContextLength = calculateChatTokens();
+                    updateProgressBar(currentContextLength, maxContextLength);
+                    console.log("currentChat after adding implicit websearch system message:", JSON.stringify(currentChat, null, 2));
+                }
+            } catch (err) {
+                if (err.name === "AbortError") return;
+                console.error("Websearch error:", err?.message || err);
+            } finally {
+                try {
+                    searchBubble.wrapper.remove();
+                } catch (e) {}
+            }
+        } else if (detectedUrl && !isCodeInput(text)) {
+            const crawlBubble = addBubble("Searching...", "bot");
+            try {
+                let endpoint = CRAWL_ENDPOINT;
+                let isYouTube = false;
+                if (detectedUrl.includes("youtube.com/watch?v=") || detectedUrl.includes("youtu.be/")) {
+                    endpoint = YOUTUBE_ENDPOINT;
+                    isYouTube = true;
+                }
+
+                console.log("Crawling URL:", detectedUrl, "Endpoint:", endpoint);
+                const crawlRes = await fetch(endpoint, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        query: detectedUrl
+                    }),
+                    signal: abortController.signal
+                });
+                let crawlData = await crawlRes.json();
+                console.log("Crawl response:", crawlData);
+                if (crawlRes.ok && crawlData && crawlData.content) {
+                    crawledText = String(crawlData.content).slice(0, 100000);
+                    sourceUrl = crawlData.url || detectedUrl;
+                    metadata = crawlData.metadata || null;
+                    images = crawlData.images || [];
+                    console.log("Images extracted:", images);
+                    const systemMessage = {
+                        role: "system",
+                        content: isYouTube ?
+                            systemPrompts.youtube.replace("{content}", crawledText).replace("{metadata}", JSON.stringify(metadata)) :
+                            systemPrompts.crawl.replace("{content}", crawledText).replace("{metadata}", JSON.stringify(metadata)),
+                        id: `system-${Date.now()}`
+                    };
+                    currentChat = [
+                        ...currentChat.slice(0, -1),
+                        systemMessage,
+                        currentChat[currentChat.length - 1]
+                    ];
+                    augmentedMessages = [
+                        ...currentChat.slice(0, -1),
+                        systemMessage,
+                        currentChat[currentChat.length - 1]
+                    ];
+                    if (isYouTube && metadata) {
+                        metadata.fromYouTube = true;
+                    }
+                    currentContextLength = calculateChatTokens();
+                    updateProgressBar(currentContextLength, maxContextLength);
+                    console.log("currentChat after adding crawl/youtube system message:", JSON.stringify(currentChat, null, 2));
+                }
+                // If no content, skip crawl and proceed to LM
+            } catch (err) {
+                if (err.name === "AbortError") return;
+                console.error("Crawl error:", err?.message || err);
+                // Continue to LM without displaying crawl error
+            } finally {
+                try {
+                    crawlBubble.wrapper.remove();
+                } catch (e) {}
+            }
+        }
+
+        // Add code-specific prompt if input is code
+        if (isCodeInput(text)) {
+            const codePrompt = systemPrompts.code.replace("{content}", text);
+            const systemMessage = {
+                role: "system",
+                content: codePrompt,
+                id: `system-${Date.now()}`
+            };
+            currentChat = [
+                ...currentChat.slice(0, -1),
+                systemMessage,
+                currentChat[currentChat.length - 1]
+            ];
+            augmentedMessages = [
+                ...currentChat.slice(0, -1),
+                systemMessage,
+                currentChat[currentChat.length - 1]
+            ];
+            currentContextLength = calculateChatTokens();
+            updateProgressBar(currentContextLength, maxContextLength);
+            console.log("currentChat after adding code system message:", JSON.stringify(currentChat, null, 2));
+        }
+
+        const hasSources = !!(crawledText || sourceUrl || (pdfSourceUrl && pdfSourceContent));
+        const finalSourceUrl = pdfSourceUrl || sourceUrl;
+        const finalSourceContent = pdfSourceContent || crawledText;
+        const finalMetadata = pdfMetadata || metadata;
+
+        let botBubble = null;
+
+        const streamResponse = await fetch(LM_ENDPOINT, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                model: currentModel,
+                messages: augmentedMessages,
+                stream: true
+            }),
+            signal: abortController.signal
+        });
+
+        if (!streamResponse.ok) {
+            thinkingBubble.wrapper.remove();
+            addBubble("⚠️ Error: Could not reach LM Studio.", "bot");
+            setSending(false);
+            inputEl.focus();
+            sendBtn.removeEventListener("click", stopHandler);
+            sendBtn.addEventListener("click", originalSendHandler);
+            return;
+        }
+
+        const reader = streamResponse.body.getReader();
+        const decoder = new TextDecoder();
+        let accumulatedText = "";
+
+        const handleStream = async (chunk) => {
+            if (!botBubble && chunk && chunk.trim()) {
+                botBubble = addBubble("", "bot", hasSources, finalSourceUrl, finalSourceContent, finalMetadata, embedUrl, youtubeId, detectedUrl, images);
+                botBubble.wrapper.style.display = "block";
+                try {
+                    thinkingBubble.wrapper.remove();
+                } catch (e) {
+                    console.warn("Error removing thinking bubble:", e);
+                }
+            }
+            if (chunk) {
+                accumulatedText += chunk;
+                if (botBubble) {
+                    botBubble.textContainer.innerHTML = sanitizeAndRenderMarkdown(accumulatedText);
+                    botBubble.textContainer.querySelectorAll("a").forEach(a => {
+                        a.setAttribute("target", "_blank");
+                        a.setAttribute("rel", "noopener noreferrer");
+                    });
+                    highlightCodeBlocks(botBubble.textContainer);
+                    addPreCopyButtons(botBubble.bubble);
+                    if (autoScroll) scrollToBottom();
+                }
+            }
+            if (!chunk && botBubble) {
+                currentChat.push({
+                    role: "assistant",
+                    content: accumulatedText,
+                    id: botBubble.wrapper.dataset.messageId
+                });
+                currentContextLength = calculateChatTokens();
+                updateProgressBar(currentContextLength, maxContextLength);
+                addPreCopyButtons(botBubble.bubble);
+                if (images && images.length > 0 && !youtubeId) {
+                    const imageContainer = document.createElement("div");
+                    imageContainer.className = "image-container";
+                    images.forEach((imgData, idx) => {
+                        const img = document.createElement("img");
+                        img.src = imgData.url || imgData; // Assume imgData is { url, sourceUrl }
+                        img.alt = finalMetadata && finalMetadata.fromWebSearch ? "Thumbnail from web search result" : finalMetadata && finalMetadata.fromNews ? "Thumbnail from news article" : "Thumbnail from crawled page";
+                        img.className = "image-thumbnail";
+                        img.setAttribute("loading", "lazy");
+                        // Store only the source URL
+                        img.dataset.sourceUrl = imgData.sourceUrl || finalSourceUrl || "";
+                        img.addEventListener("click", () => {
+                            expandedImage.src = img.src;
+                            // Update source container with only the article link
+                            const sourceLinkEl = document.getElementById("imageSourceLink");
+                            if (img.dataset.sourceUrl) {
+                                sourceLinkEl.innerHTML = `<a href="${img.dataset.sourceUrl}" target="_blank" rel="noopener noreferrer">${img.dataset.sourceUrl}</a>`;
+                            } else {
+                                sourceLinkEl.innerHTML = "No source URL available";
+                            }
+                            imageModal.classList.add("active");
+                        });
+                        img.onerror = () => {
+                            console.warn(`Failed to load image: ${img.src}`);
+                            img.style.display = "none";
+                        };
+                        imageContainer.appendChild(img);
+                    });
+                    botBubble.bubble.appendChild(imageContainer);
+                }
+            }
+            if (!chunk && !botBubble) {
+                try {
+                    thinkingBubble.wrapper.remove();
+                } catch (e) {
+                    console.warn("Error removing thinking bubble:", e);
+                }
+            }
+        };
+
+        let done = false;
+        while (!done) {
+            try {
+                const {
+                    value,
+                    done: streamDone
+                } = await reader.read();
+                done = streamDone;
+                if (value) {
+                    const chunk = decoder.decode(value, {
+                        stream: true
+                    });
+                    const lines = chunk.split("\n");
+                    for (const line of lines) {
+                        if (line.startsWith("data: ")) {
+                            const data = line.slice(6);
+                            if (data === "[DONE]") {
+                                done = true;
+                                break;
+                            }
+                            try {
+                                const parsed = JSON.parse(data);
+                                const content = parsed.choices?.[0]?.delta?.content || "";
+                                if (content) {
+                                    await handleStream(content);
+                                }
+                            } catch (e) {
+                                console.error("Error parsing stream chunk:", e);
+                            }
+                        }
+                    }
+                }
+            } catch (err) {
+                if (err.name === "AbortError") {
+                    console.log("Stream aborted");
+                    return;
+                }
+                console.error("Stream error:", err);
+                break;
+            }
+        }
+
+        await handleStream("");
+    } catch (err) {
+        if (err.name === "AbortError") {
+            console.log("Request aborted");
+            return;
+        }
+        console.error("LM call error:", err?.message || err);
+        try {
+            thinkingBubble.wrapper.remove();
+        } catch (e) {
+            console.warn("Error removing thinking bubble:", e);
+        }
+        addBubble("⚠️ Error: Could not reach LM Studio. Details: " + (err?.message || String(err)), "bot");
+    } finally {
+        setSending(false);
+        inputEl.focus();
+        sendBtn.removeEventListener("click", stopHandler);
+        sendBtn.addEventListener("click", originalSendHandler);
+        abortController = null;
+        pendingPdf = null;
     }
-    console.error("LM call error:", err?.message || err);
-    try { thinkingBubble.wrapper.remove(); } catch (e) { console.warn("Error removing thinking bubble:", e); }
-    addBubble("⚠️ Error: Could not reach LM Studio. Details: " + (err?.message || String(err)), "bot");
-  } finally {
-    setSending(false);
-    inputEl.focus();
-    sendBtn.removeEventListener("click", stopHandler);
-    sendBtn.addEventListener("click", originalSendHandler);
-    abortController = null;
-    pendingPdf = null;
-  }
 }
 const modelBtn = document.getElementById("modelBtn");
 const modelList = document.getElementById("modelList");
@@ -1815,106 +1949,106 @@ let maxContextLength = 0; // Track configured context length from LM Studio
 
 // Simple token estimation function (approximate: 1 token ~ 0.75 words)
 function estimateTokens(text) {
-  if (!text) return 0;
-  const words = text.trim().split(/\s+/).length;
-  return Math.ceil(words / 0.75); // Rough estimate: 1 token ≈ 0.75 words
+    if (!text) return 0;
+    const words = text.trim().split(/\s+/).length;
+    return Math.ceil(words / 0.75); // Rough estimate: 1 token ≈ 0.75 words
 }
 
 // Update progress bar with current and max context length
 function updateProgressBar(currentTokens, maxTokens) {
-  const progressEl = document.getElementById("context-progress");
-  const labelEl = document.getElementById("context-label");
-  if (!progressEl || !labelEl) return;
+    const progressEl = document.getElementById("context-progress");
+    const labelEl = document.getElementById("context-label");
+    if (!progressEl || !labelEl) return;
 
-  const percentage = maxTokens > 0 ? (currentTokens / maxTokens) * 100 : 0;
-  progressEl.value = percentage;
-  labelEl.textContent = `${currentTokens} / ${maxTokens} tokens`;
+    const percentage = maxTokens > 0 ? (currentTokens / maxTokens) * 100 : 0;
+    progressEl.value = percentage;
+    labelEl.textContent = `${currentTokens} / ${maxTokens} tokens`;
 }
 
 // Calculate total tokens in currentChat
 function calculateChatTokens() {
-  return currentChat.reduce((total, message) => total + estimateTokens(message.content), 0);
+    return currentChat.reduce((total, message) => total + estimateTokens(message.content), 0);
 }
 
 // Modified fetchModels to use loaded_context_length as max
 async function fetchModels() {
-  try {
-    const res = await fetch("http://localhost:1234/api/v0/models");
-    const data = await res.json();
-    const models = data.data || [];
-    modelList.innerHTML = "";
+    try {
+        const res = await fetch("http://localhost:1234/api/v0/models");
+        const data = await res.json();
+        const models = data.data || [];
+        modelList.innerHTML = "";
 
-    if (models.length === 0) {
-      const li = document.createElement("li");
-      li.textContent = "No models available";
-      li.style.cursor = "default";
-      li.style.color = "var(--muted)";
-      modelList.appendChild(li);
-      updateProgressBar(0, 0); // Reset progress bar
-      return;
-    }
+        if (models.length === 0) {
+            const li = document.createElement("li");
+            li.textContent = "No models available";
+            li.style.cursor = "default";
+            li.style.color = "var(--muted)";
+            modelList.appendChild(li);
+            updateProgressBar(0, 0); // Reset progress bar
+            return;
+        }
 
-    // Find the loaded model, if any
-    let loadedModel = models.find(m => m.state === "loaded") || models[0];
+        // Find the loaded model, if any
+        let loadedModel = models.find(m => m.state === "loaded") || models[0];
 
-    // Set the current model and max context length to the loaded model (or first model if none loaded)
-    currentModel = loadedModel.id;
-    maxContextLength = loadedModel.loaded_context_length || 0;
-    currentContextLength = calculateChatTokens();
-    modelBtn.textContent = currentModel;
-    updateProgressBar(currentContextLength, maxContextLength);
-
-    // Populate the model list
-    models.forEach(m => {
-      const li = document.createElement("li");
-      li.textContent = m.id;
-      li.setAttribute("role", "option");
-      li.setAttribute("aria-selected", m.id === currentModel);
-      li.classList.toggle("active", m.id === currentModel);
-      li.dataset.loadedContextLength = m.loaded_context_length || 0;
-      li.addEventListener("click", () => {
-        currentModel = m.id;
-        maxContextLength = m.loaded_context_length || 0;
+        // Set the current model and max context length to the loaded model (or first model if none loaded)
+        currentModel = loadedModel.id;
+        maxContextLength = loadedModel.loaded_context_length || 0;
         currentContextLength = calculateChatTokens();
-        modelBtn.textContent = m.id;
-        modelBtn.setAttribute("aria-expanded", "false");
-        modelList.classList.remove("active");
-        modelList.querySelectorAll("li").forEach(d => {
-          d.classList.remove("active");
-          d.setAttribute("aria-selected", "false");
-        });
-        li.classList.add("active");
-        li.setAttribute("aria-selected", "true");
+        modelBtn.textContent = currentModel;
         updateProgressBar(currentContextLength, maxContextLength);
-      });
-      modelList.appendChild(li);
-    });
 
-  } catch (err) {
-    console.error("Failed to fetch models:", err);
-    modelList.innerHTML = '<li style="color: var(--muted); cursor: default;">Error loading models</li>';
-    updateProgressBar(0, 0);
-  }
+        // Populate the model list
+        models.forEach(m => {
+            const li = document.createElement("li");
+            li.textContent = m.id;
+            li.setAttribute("role", "option");
+            li.setAttribute("aria-selected", m.id === currentModel);
+            li.classList.toggle("active", m.id === currentModel);
+            li.dataset.loadedContextLength = m.loaded_context_length || 0;
+            li.addEventListener("click", () => {
+                currentModel = m.id;
+                maxContextLength = m.loaded_context_length || 0;
+                currentContextLength = calculateChatTokens();
+                modelBtn.textContent = m.id;
+                modelBtn.setAttribute("aria-expanded", "false");
+                modelList.classList.remove("active");
+                modelList.querySelectorAll("li").forEach(d => {
+                    d.classList.remove("active");
+                    d.setAttribute("aria-selected", "false");
+                });
+                li.classList.add("active");
+                li.setAttribute("aria-selected", "true");
+                updateProgressBar(currentContextLength, maxContextLength);
+            });
+            modelList.appendChild(li);
+        });
+
+    } catch (err) {
+        console.error("Failed to fetch models:", err);
+        modelList.innerHTML = '<li style="color: var(--muted); cursor: default;">Error loading models</li>';
+        updateProgressBar(0, 0);
+    }
 }
 modelBtn.addEventListener("click", (e) => {
-  e.stopPropagation();
-  const isExpanded = modelList.classList.toggle("active");
-  modelBtn.setAttribute("aria-expanded", isExpanded);
+    e.stopPropagation();
+    const isExpanded = modelList.classList.toggle("active");
+    modelBtn.setAttribute("aria-expanded", isExpanded);
 });
 
 document.addEventListener("click", (e) => {
-  if (!modelBtn.contains(e.target) && !modelList.contains(e.target)) {
-    modelList.classList.remove("active");
-    modelBtn.setAttribute("aria-expanded", "false");
-  }
+    if (!modelBtn.contains(e.target) && !modelList.contains(e.target)) {
+        modelList.classList.remove("active");
+        modelBtn.setAttribute("aria-expanded", "false");
+    }
 });
 
 document.addEventListener("keydown", (e) => {
-  if (e.key === "Escape" && modelList.classList.contains("active")) {
-    modelList.classList.remove("active");
-    modelBtn.setAttribute("aria-expanded", "false");
-    modelBtn.focus();
-  }
+    if (e.key === "Escape" && modelList.classList.contains("active")) {
+        modelList.classList.remove("active");
+        modelBtn.setAttribute("aria-expanded", "false");
+        modelBtn.focus();
+    }
 });
 
 fetchModels();
@@ -1924,78 +2058,88 @@ const messages = document.querySelector('.messages');
 const scrollBtn = document.getElementById('scrollBtn');
 
 function checkScroll() {
-  if (messagesEl.scrollTop + messagesEl.clientHeight < messagesEl.scrollHeight - 1) {
-    scrollBtn.style.display = 'flex';
-  } else {
-    scrollBtn.style.display = 'none';
-  }
+    if (messagesEl.scrollTop + messagesEl.clientHeight < messagesEl.scrollHeight - 1) {
+        scrollBtn.style.display = 'flex';
+    } else {
+        scrollBtn.style.display = 'none';
+    }
 }
 
 messagesEl.addEventListener('scroll', () => {
-  const isAtBottom = messagesEl.scrollTop + messagesEl.clientHeight >= messagesEl.scrollHeight - 1;
-  autoScroll = isAtBottom;
-  checkScroll();
+    const isAtBottom = messagesEl.scrollTop + messagesEl.clientHeight >= messagesEl.scrollHeight - 1;
+    autoScroll = isAtBottom;
+    checkScroll();
 });
 
 scrollBtn.addEventListener("click", () => {
-  autoScroll = true;
-  messagesEl.scrollTo({ top: messagesEl.scrollHeight, behavior: "smooth" });
+    autoScroll = true;
+    messagesEl.scrollTo({
+        top: messagesEl.scrollHeight,
+        behavior: "smooth"
+    });
 });
 
 function onNewMessage() {
-  checkScroll();
+    checkScroll();
 }
 
 const pdfBtn = document.getElementById("pdfBtn");
 const pdfInput = document.getElementById("pdfInput");
 
 pdfBtn.addEventListener("click", () => {
-  pdfInput.click();
+    pdfInput.click();
 });
 
 pdfInput.addEventListener("change", async (event) => {
-  const file = event.target.files[0];
-  if (!file) return;
+    const file = event.target.files[0];
+    if (!file) return;
 
-  if (file.type !== "application/pdf") {
-    addBubble("⚠️ Please select a valid PDF file.", "bot");
-    return;
-  }
-
-  const formData = new FormData();
-  formData.append("file", file);
-
-  try {
-    const response = await fetch("http://localhost:5000/pdf", {
-      method: "POST",
-      body: formData
-    });
-
-    const data = await response.json();
-
-    if (!response.ok || data.error) {
-      addBubble(`⚠️ PDF Error: ${data.error || "Failed to process PDF."}`, "bot");
-      return;
+    if (file.type !== "application/pdf") {
+        addBubble("⚠️ Please select a valid PDF file.", "bot");
+        return;
     }
 
-    const pdfText = data.content;
-    if (!pdfText) {
-      addBubble("⚠️ No text could be extracted from the PDF.", "bot");
-      return;
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+        const response = await fetch("http://localhost:5000/pdf", {
+            method: "POST",
+            body: formData
+        });
+
+        const data = await response.json();
+
+        if (!response.ok || data.error) {
+            addBubble(`⚠️ PDF Error: ${data.error || "Failed to process PDF."}`, "bot");
+            return;
+        }
+
+        const pdfText = data.content;
+        if (!pdfText) {
+            addBubble("⚠️ No text could be extracted from the PDF.", "bot");
+            return;
+        }
+
+        pendingPdf = {
+            filename: file.name,
+            text: pdfText
+        };
+
+        const systemPrompt = `You are an AI assistant with access to the following PDF document:\n\n----- PDF CONTENT START -----\n${pdfText}\n----- PDF CONTENT END -----\n\nYour task:\n- Answer questions strictly based on this document.\n- Provide detailed explanations and well-structured responses.\n- Include relevant sections or quotes when needed.\n- If asked something outside the PDF, politely say you don’t know.`;
+
+        currentChat = currentChat.filter(m => m.role !== "system");
+        currentChat.push({
+            role: "system",
+            content: systemPrompt,
+            id: `system-${Date.now()}`
+        });
+
+        inputEl.placeholder = `Ask about ${file.name}...`;
+        inputEl.value = "";
+        inputEl.focus();
+    } catch (err) {
+        console.error("PDF upload error:", err);
+        addBubble(`⚠️ PDF Error: ${err.message || "Failed to upload or process PDF."}`, "bot");
     }
-
-    pendingPdf = { filename: file.name, text: pdfText };
-
-    const systemPrompt = `You are an AI assistant with access to the following PDF document:\n\n----- PDF CONTENT START -----\n${pdfText}\n----- PDF CONTENT END -----\n\nYour task:\n- Answer questions strictly based on this document.\n- Provide detailed explanations and well-structured responses.\n- Include relevant sections or quotes when needed.\n- If asked something outside the PDF, politely say you don’t know.`;
-
-    currentChat = currentChat.filter(m => m.role !== "system");
-    currentChat.push({ role: "system", content: systemPrompt, id: `system-${Date.now()}` });
-
-    inputEl.placeholder = `Ask about ${file.name}...`;
-    inputEl.value = "";
-    inputEl.focus();
-  } catch (err) {
-    console.error("PDF upload error:", err);
-    addBubble(`⚠️ PDF Error: ${err.message || "Failed to upload or process PDF."}`, "bot");
-  }
 });
