@@ -38,6 +38,35 @@ html, body {
   background: var(--bg);
   position: relative;
 }
+.modal.image-modal {
+  display: flex;
+  flex-direction: column; /* stack elements vertically */
+  align-items: center;    /* center horizontally */
+  justify-content: flex-start;
+  max-width: 90%;
+  max-height: 90%;
+  overflow: auto;
+  background: #fff; /* or your modal background */
+  padding: 10px;
+  box-sizing: border-box;
+}
+
+.modal.image-modal img#expandedImage {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin-bottom: 10px; /* space between image and source container */
+}
+
+#imageSourceContainer {
+  width: 100%;
+  background: var(--bg-light);
+  border-top: 1px solid var(--border);
+  padding: 10px;
+  box-sizing: border-box;
+  text-align: center;  /* ✅ centers inline content like links */
+}
+
 
 .topbar {
   height: 56px;
