@@ -138,7 +138,20 @@ Your task:
 - If the PDF content is incomplete or unreadable, note this politely and provide any usable information or suggest alternatives.
 - Use a professional, helpful tone suitable for a general audience, ensuring clarity and structure.
 - Example tone: "This PDF covers [topic]—here’s a quick summary to get you up to speed!"`,
+code: `You are an AI assistant tasked with analyzing or modifying code provided by the user. The input may contain code snippets, including URLs or endpoints that should not be fetched but treated as part of the code. Your task is to:
 
+- Analyze the code if the user asks for analysis (e.g., explain functionality, identify bugs).
+- Modify the code if the user requests changes (e.g., refactor, fix errors).
+- If the user provides a general query about the code, provide a clear and detailed response based on the code content.
+- Do not attempt to fetch or access any URLs within the code unless explicitly instructed to crawl them.
+- Format responses in Markdown, using code blocks for code snippets.
+
+Here is the user-provided code:
+\`\`\`
+{content}
+\`\`\`
+
+Please proceed with the user's request.`,
   news: `You are a news-savvy AI assistant designed to deliver clear, balanced, and engaging summaries based on recent news articles in JSON format.
 
 Here are the relevant news results:
@@ -227,6 +240,8 @@ function openSettingsModal() {
   <textarea id="pdfPrompt" class="settings-textarea">${systemPrompts.pdf}</textarea>
   <label>News Prompt</label>
   <textarea id="newsPrompt" class="settings-textarea">${systemPrompts.news}</textarea>
+  <label>Code Prompt</label>
+  <textarea id="codePrompt" class="settings-textarea">${systemPrompts.code}</textarea>
   <div style="display: flex; gap: 8px; margin-top: 12px;">
   <button id="saveSettingsBtn" class="btn primary">Save</button>
   <button id="cancelSettingsBtn" class="btn">Cancel</button>
@@ -245,6 +260,7 @@ function openSettingsModal() {
     systemPrompts.youtube = document.getElementById("youtubePrompt").value.trim();
     systemPrompts.pdf = document.getElementById("pdfPrompt").value.trim();
     systemPrompts.news = document.getElementById("newsPrompt").value.trim();
+    systemPrompts.code = document.getElementById("codePrompt").value.trim();
     await saveSettings();
     settingsModal.classList.remove("active");
     modalOverlay.classList.remove("active");
@@ -312,6 +328,16 @@ function highlightCodeBlocks(container) {
   });
 }
 
+function isCodeInput(text) {
+  const codePatterns = [
+    /^```/, // Markdown code block
+    /\b(const|let|var|function|async|await|def|class|import|export)\b/, // JS/Python keywords
+    /^{/, // JSON or object literal
+    /<\w+>/, // HTML-like tags
+    /@app\.route/ // Flask-specific pattern
+  ];
+  return codePatterns.some(pattern => pattern.test(text.trim()));
+}
 
 function extractUrl(text) {
   const urlRegex = /(https?:\/\/[^\s]+)/i;
@@ -1334,8 +1360,6 @@ async function sendMessage(isRetry = false) {
         currentContextLength = calculateChatTokens();
         updateProgressBar(currentContextLength, maxContextLength);
         console.log("currentChat after adding system message:", JSON.stringify(currentChat, null, 2));
-        console.log("augmentedMessages:", JSON.stringify(augmentedMessages, null, 2));
-        console.log("Estimated tokens:", calculateChatTokens());
       } catch (err) {
         if (err.name === "AbortError") return;
         weatherBubble.wrapper.remove();
@@ -1528,7 +1552,7 @@ async function sendMessage(isRetry = false) {
       } finally {
         try { searchBubble.wrapper.remove(); } catch (e) {}
       }
-    } else if (detectedUrl) {
+    } else if (detectedUrl && !isCodeInput(text)) {
       const crawlBubble = addBubble("Searching...", "bot");
       try {
         let endpoint = CRAWL_ENDPOINT;
@@ -1538,6 +1562,7 @@ async function sendMessage(isRetry = false) {
           isYouTube = true;
         }
 
+        console.log("Crawling URL:", detectedUrl, "Endpoint:", endpoint);
         const crawlRes = await fetch(endpoint, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -1575,22 +1600,35 @@ async function sendMessage(isRetry = false) {
           currentContextLength = calculateChatTokens();
           updateProgressBar(currentContextLength, maxContextLength);
           console.log("currentChat after adding crawl/youtube system message:", JSON.stringify(currentChat, null, 2));
-        } else {
-          throw new Error(crawlData.error || "No content returned from crawl");
         }
+        // If no content, skip crawl and proceed to LM
       } catch (err) {
         if (err.name === "AbortError") return;
         console.error("Crawl error:", err?.message || err);
-        crawlBubble.wrapper.remove();
-        thinkingBubble.wrapper.remove();
-        addBubble(`⚠️ Crawl Error: ${err.message || "Failed to crawl URL"}`, "bot");
-        setSending(false);
-        inputEl.focus();
-        return;
+        // Continue to LM without displaying crawl error
       } finally {
         try { crawlBubble.wrapper.remove(); } catch (e) {}
       }
     }
+
+    // Add code-specific prompt if input is code
+    if (isCodeInput(text)) {
+  const codePrompt = systemPrompts.code.replace("{content}", text);
+  const systemMessage = { role: "system", content: codePrompt, id: `system-${Date.now()}` };
+  currentChat = [
+    ...currentChat.slice(0, -1),
+    systemMessage,
+    currentChat[currentChat.length - 1]
+  ];
+  augmentedMessages = [
+    ...currentChat.slice(0, -1),
+    systemMessage,
+    currentChat[currentChat.length - 1]
+  ];
+  currentContextLength = calculateChatTokens();
+  updateProgressBar(currentContextLength, maxContextLength);
+  console.log("currentChat after adding code system message:", JSON.stringify(currentChat, null, 2));
+}
 
     const hasSources = !!(crawledText || sourceUrl || (pdfSourceUrl && pdfSourceContent));
     const finalSourceUrl = pdfSourceUrl || sourceUrl;
@@ -1730,7 +1768,6 @@ async function sendMessage(isRetry = false) {
     pendingPdf = null;
   }
 }
-
 const modelBtn = document.getElementById("modelBtn");
 const modelList = document.getElementById("modelList");
 
