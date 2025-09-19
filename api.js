@@ -330,13 +330,19 @@ function highlightCodeBlocks(container) {
 
 function isCodeInput(text) {
   const codePatterns = [
-    /^```/, // Markdown code block
-    /\b(const|let|var|function|async|await|def|class|import|export)\b/, // JS/Python keywords
-    /^{/, // JSON or object literal
-    /<\w+>/, // HTML-like tags
-    /@app\.route/ // Flask-specific pattern
+    /^```[\s\S]*\n[\s\S]+\n```$/, // Full Markdown code block (start and end)
+    /\b(const|let|var|function|async|await|def|class|import|export)\b.*[\{\(\;]/, // JS/Python keywords followed by code-like syntax
+    /^{\s*[\w"]/, // JSON or object literal with content
+    /<\w+>.*<\/\w+>/, // HTML-like tags with closing tags
+    /@app\.route.*\(/ // Flask-specific route with function
   ];
-  return codePatterns.some(pattern => pattern.test(text.trim()));
+  
+  // Remove URLs from text before testing to avoid false positives
+  const urlRegex = /https?:\/\/[^\s]+/i;
+  const cleanedText = text.replace(urlRegex, "").trim();
+  
+  // Only return true if the cleaned text (without URLs) matches a code pattern
+  return codePatterns.some(pattern => pattern.test(cleanedText));
 }
 
 function extractUrl(text) {
