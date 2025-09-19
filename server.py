@@ -22,6 +22,8 @@ import io
 from io import BytesIO
 from PIL import Image
 from concurrent.futures import ThreadPoolExecutor, as_completed
+
+# Constants
 CACHE_DIR = Path("./webui_cache/")
 USER_AGENTS = [
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36",
@@ -68,7 +70,7 @@ BLOCKED_TLDS = [
     ".tw", ".ua", ".uy", ".uz", ".ve", ".vn", ".ye", ".za", ".zm", ".zw"
 ]
 SEARXNG_URL = "http://127.0.0.1:8888/search"
-max_sources = 15
+max_sources = 10
 MAX_LOGO_WIDTH = 150
 MAX_LOGO_HEIGHT = 150
 REQUEST_TIMEOUT = 5
@@ -690,15 +692,37 @@ def crawl():
     data = request.get_json()
     query = data.get("query")
     if not query:
-        return jsonify({"error": "No query provided"}), 400
-    if not query.startswith(("http://","https://")):
+        return jsonify({"content": "", "site": "", "images": []}), 200
+
+    if not query.startswith(("http://", "https://")):
         query = f"https://{query}"
+
+    # Check if URL is localhost or likely invalid
+    parsed_url = urlparse(query)
+    if parsed_url.hostname in ("localhost", "127.0.0.1", "::1"):
+        logging.info(f"Skipping crawl for localhost URL: {query}")
+        return jsonify({
+            "site": query,
+            "content": "",  # Empty content as requested
+            "images": []
+        }), 200
+
     try:
         if "youtube.com/watch?v=" in query or "youtu.be/" in query:
-            return jsonify({"error": "Use /youtube endpoint for YouTube URLs"}), 400
-        return jsonify(fetch_and_clean_webpage(query, include_images=True))
+            return jsonify({
+                "site": query,
+                "content": "",
+                "images": []
+            }), 200  # Avoid error for YouTube URLs
+        result = fetch_and_clean_webpage(query, include_images=True)
+        return jsonify(result), 200
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        logging.warning(f"Crawl failed for {query}: {str(e)}")
+        return jsonify({
+            "site": query,
+            "content": "",  # Empty content for failed crawls
+            "images": []
+        }), 200
 @app.route("/youtube", methods=["POST"])
 def youtube():
     data = request.get_json()
