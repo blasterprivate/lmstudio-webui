@@ -1,4 +1,4 @@
-1. **Upload images
+1. **Upload images:**
 
    * for image models only
 
