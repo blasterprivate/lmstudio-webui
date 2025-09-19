@@ -3,10 +3,12 @@
   box-sizing: border-box;
 }
 
-html, body {
+html,
+body {
   height: 100%;
   margin: 0;
-  font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto,
+    "Helvetica Neue", Arial;
   color: var(--text);
   background: var(--bg);
 }
@@ -41,7 +43,7 @@ html, body {
 .modal.image-modal {
   display: flex;
   flex-direction: column; /* stack elements vertically */
-  align-items: center;    /* center horizontally */
+  align-items: center; /* center horizontally */
   justify-content: flex-start;
   max-width: 90%;
   max-height: 90%;
@@ -64,9 +66,8 @@ html, body {
   border-top: 1px solid var(--border);
   padding: 10px;
   box-sizing: border-box;
-  text-align: center;  /* ✅ centers inline content like links */
+  text-align: center; /* ✅ centers inline content like links */
 }
-
 
 .topbar {
   height: 56px;
@@ -228,13 +229,13 @@ html, body {
 
 /* Make code boxes fit & wrap instead of scrolling */
 .bubble-text pre {
-  white-space: pre-wrap !important;      /* allow line wrapping */
-  word-break: break-word !important;     /* break long words */
-  overflow-x: hidden !important;         /* no horizontal scroll */
-  font-size: 13px !important;            /* slightly smaller text */
-  line-height: 1.35 !important;          /* tighter line-height */
-  padding: 6px 8px !important;           /* tighter padding */
-  max-width: 100% !important;            /* never overflow parent */
+  white-space: pre-wrap !important; /* allow line wrapping */
+  word-break: break-word !important; /* break long words */
+  overflow-x: hidden !important; /* no horizontal scroll */
+  font-size: 13px !important; /* slightly smaller text */
+  line-height: 1.35 !important; /* tighter line-height */
+  padding: 6px 8px !important; /* tighter padding */
+  max-width: 100% !important; /* never overflow parent */
   box-sizing: border-box;
   border-radius: 8px;
 }
@@ -243,7 +244,6 @@ html, body {
   white-space: pre-wrap !important;
   word-break: break-word !important;
 }
-
 
 .bubble-transcript {
   margin-top: 8px;
@@ -360,29 +360,29 @@ button#sendBtn:hover {
 }
 
 #scrollBtn {
-position: fixed;
-bottom: 80px;
-left: 50%;
-transform: translateX(-50%);
-width: 20px;
-height: 20px;
-border-radius: 50%;
-border: none;
-background: #252628;
-color: #fff;
-font-size: 20px;
-display: none;
-align-items: center;
-justify-content: center;
-cursor: pointer;
-box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
-z-index: 100;
-transition: background 0.2s;
-stroke-width: 4;
+  position: fixed;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: none;
+  background: #252628;
+  color: #fff;
+  font-size: 20px;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+  z-index: 100;
+  transition: background 0.2s;
+  stroke-width: 4;
 }
 
 #scrollBtn:hover {
-background: hwb(240 21% 77%);
+  background: hwb(240 21% 77%);
 }
 
 .controls {
@@ -452,12 +452,11 @@ background: hwb(240 21% 77%);
   transition: color 0.2s ease, transform 0.2s ease;
 }
 
-
 /* Prism base (overrides theme defaults) */
 .bubble-text pre[class*="language-"] {
-  background: #111113 !important;  /* Your dark bg */
+  background: #111113 !important; /* Your dark bg */
   border: 1px solid #222 !important;
-  color: var(--text) !important;  /* #f4f4f6 */
+  color: var(--text) !important; /* #f4f4f6 */
 }
 
 .bubble-text code[class*="language-"] {
@@ -466,17 +465,36 @@ background: hwb(240 21% 77%);
 }
 
 /* Token colors (VSCode/Grok style: adjust hex to taste) */
-.bubble-text .token.comment { color: var(--muted) !important; }  /* Gray: /* comments */
-.bubble-text .token.selector, .bubble-text .token.tag { color: var(--accent) !important; }  /* Blue: .class, div */
-.bubble-text .token.property { color: #ffa86f !important; }  /* Orange: background: */
-.bubble-text .token.string, .bubble-text .token.attr-value { color: #86efac !important; }  /* Green: "#hex" */
-.bubble-text .token.keyword { color: #ff7b72 !important; }  /* Pink: :root */
-.bubble-text .token.function { color: #a5b4fc !important; }  /* Indigo: url() */
-.bubble-text .token.number { color: #10b981 !important; }  /* Green: 100px */
-.bubble-text .token.punctuation { color: var(--text) !important; opacity: 0.8; }  /* {} ; : */
-.bubble-text .token.operator { color: #f59e0b !important; }  /* Yellow: + = */
-
-
+.bubble-text .token.comment {
+  color: var(--muted) !important;
+} /* Gray: /* comments */
+.bubble-text .token.selector,
+.bubble-text .token.tag {
+  color: var(--accent) !important;
+} /* Blue: .class, div */
+.bubble-text .token.property {
+  color: #ffa86f !important;
+} /* Orange: background: */
+.bubble-text .token.string,
+.bubble-text .token.attr-value {
+  color: #86efac !important;
+} /* Green: "#hex" */
+.bubble-text .token.keyword {
+  color: #ff7b72 !important;
+} /* Pink: :root */
+.bubble-text .token.function {
+  color: #a5b4fc !important;
+} /* Indigo: url() */
+.bubble-text .token.number {
+  color: #10b981 !important;
+} /* Green: 100px */
+.bubble-text .token.punctuation {
+  color: var(--text) !important;
+  opacity: 0.8;
+} /* {} ; : */
+.bubble-text .token.operator {
+  color: #f59e0b !important;
+} /* Yellow: + = */
 
 .inline-copy-btn:hover {
   background: #333;
@@ -525,8 +543,8 @@ background: hwb(240 21% 77%);
 .model-progress-container progress {
   -webkit-appearance: none;
   appearance: none;
-  width: 140px;            /* width of bar */
-  height: 8px;             /* bar height */
+  width: 140px; /* width of bar */
+  height: 8px; /* bar height */
   border-radius: 4px;
   overflow: hidden;
   background-color: var(--border);
@@ -688,9 +706,9 @@ background: hwb(240 21% 77%);
 }
 
 #settingsModal {
-width: 80%;
-max-width: 1000px;
-min-width: 600px;
+  width: 80%;
+  max-width: 1000px;
+  min-width: 600px;
 }
 
 .modal.active {
@@ -911,53 +929,53 @@ min-width: 600px;
 
 /* Button-Specific Styles */
 #webBtn {
-background: none;
-border: none;
-cursor: pointer;
-font-size: 18px;
-color: var(--text);
-transition: color 0.3s, transform 0.2s;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 18px;
+  color: var(--text);
+  transition: color 0.3s, transform 0.2s;
 }
 
 #webBtn.active {
-color: #007bff;
-transform: scale(1.1);
+  color: #007bff;
+  transform: scale(1.1);
 }
 
 #webBtn:hover {
-color: #66b2ff;
+  color: #66b2ff;
 }
 
 #settingsBtn {
-background: none;
-border: none;
-cursor: pointer;
-font-size: 18px;
-color: var(--text);
-transition: color 0.2s ease, transform 0.2s ease;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 18px;
+  color: var(--text);
+  transition: color 0.2s ease, transform 0.2s ease;
 }
 
 #settingsBtn:hover {
-color: var(--accent);
-transform: scale(1.1);
+  color: var(--accent);
+  transform: scale(1.1);
 }
 
 #pdfBtn {
-background: none;
-border: none;
-cursor: pointer;
-font-size: 18px;
-color: var(--text);
-transition: color 0.3s, transform 0.2s;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 18px;
+  color: var(--text);
+  transition: color 0.3s, transform 0.2s;
 }
 
 #pdfBtn.active {
-color: #e74c3c;
-transform: scale(1.1);
+  color: #e74c3c;
+  transform: scale(1.1);
 }
 
 #pdfBtn:hover {
-color: #ff6b6b;
+  color: #ff6b6b;
 }
 
 .youtube-btn {
@@ -1010,9 +1028,15 @@ textarea.input {
 
 /* Animations */
 @keyframes pulse {
-  0% { opacity: 0.7; }
-  50% { opacity: 1; }
-  100% { opacity: 0.7; }
+  0% {
+    opacity: 0.7;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.7;
+  }
 }
 
 /* Stars */
@@ -1099,9 +1123,17 @@ textarea.input {
   }
 
   @keyframes drift {
-    0%   { transform: translateY(0) translateX(0); opacity: .8; }
-    50%  { opacity: .4; }
-    100% { transform: translateY(-50vh) translateX(50vw); opacity: .8; }
+    0% {
+      transform: translateY(0) translateX(0);
+      opacity: 0.8;
+    }
+    50% {
+      opacity: 0.4;
+    }
+    100% {
+      transform: translateY(-50vh) translateX(50vw);
+      opacity: 0.8;
+    }
   }
   .modal {
     max-width: 100%;
