@@ -85,7 +85,7 @@ Your task:
 - Maintain a warm, conversational tone suitable for a general audience, avoiding technical jargon unless necessary.
 - Example tone: "Looks like a sunny day in Paris! 🇫🇷 Let's break down the forecast for you."`,
 
-  websearch: `You are a web-savvy AI assistant designed to deliver clear, engaging, and balanced summaries based on recent web search results in JSON format.
+  websearch: `You are a web-savvy AI assistant designed to deliver clear, accurate, and engaging summaries from recent web search results in JSON format.
 
 Here are the relevant web search results:
 ----- WEB RESULTS START -----
@@ -93,16 +93,35 @@ Here are the relevant web search results:
 ----- WEB RESULTS END -----
 
 Your task:
-- Parse the JSON web search data, which includes an array of results with site URLs, titles, summaries, and optional metadata (e.g., publication date, author).
-- Sort results by relevance (based on metadata like click-through rates or query match) or recency if metadata supports it; otherwise, maintain the provided order.
-- Deliver a response in Markdown format with:
-  - **## Search Overview**: A concise, engaging summary (3-5 sentences) synthesizing key findings, trends, or insights across results. Highlight common themes, contradictions, or notable patterns without bias.
-  - **## Search Results**: A Markdown table with columns for Source (hostname, e.g., "example.com"), Summary (2-3 sentences capturing main points, key facts, or unique insights), and Link (formatted as "[Title](URL)").
-- Ensure summaries are neutral, avoiding sensationalism or favoritism toward any source.
-- If metadata (e.g., publication date) is available, integrate it naturally into summaries (e.g., "Published on [date], this article...").
-- If no valid results are available or results are irrelevant, politely explain (e.g., "No relevant results found for [query]. Would you like me to search again or provide general information?").
-- Use a clear, professional, and engaging tone suitable for a general audience, ensuring accessibility and depth.
-- Example tone: "Here's what the web has to say about [query]—let's dive into the key insights!"`,
+
+1. **Parse and prioritize results**  
+   - Extract key details from the JSON, including URL, title, summary, and optional metadata (e.g., publication date, author).  
+   - Sort results by relevance, recency, or quality of metadata. If no clear priority exists, preserve the order provided.
+
+2. **Generate a Markdown response with two main sections**  
+
+   **## Search Overview**  
+   - Provide a concise, engaging summary (3–5 sentences) synthesizing key findings, patterns, or insights across the results.  
+   - Highlight agreements, contradictions, or notable trends without bias.  
+   - Integrate metadata naturally when available (e.g., “Published on [date], this source reports…”).  
+
+   **## Search Results**  
+   - Present a Markdown table with columns:  
+     - **Source**: Hostname (e.g., "example.com")  
+     - **Summary**: 2–3 sentence synthesis of main points, facts, or unique insights  
+     - **Link**: Formatted as “[Title](URL)”  
+   - Ensure clarity, neutrality, and consistency in phrasing.
+
+3. **Handle edge cases gracefully**  
+   - If no relevant results are available, respond politely: e.g., “No relevant results found for [query]. I can search again or provide general information.”  
+   - Avoid speculation; only report what the sources support.
+
+4. **Tone and style**  
+   - Maintain a professional yet engaging tone suitable for a general audience.  
+   - Make summaries accessible, informative, and concise.  
+   - Example: “Here's what the web has to say about [query]—let's explore the key insights!”
+
+Follow these guidelines precisely to ensure structured, accurate, and readable outputs.`,
 
   crawl: `You are an AI assistant tasked with summarizing webpage content to provide a clear, engaging, and accurate response.
 
@@ -1378,73 +1397,77 @@ async function sendMessage(isRetry = false) {
         try { weatherBubble.wrapper.remove(); } catch (e) {}
       }
     } else if (newsMatch) {
-      const topic = newsMatch[1].trim();
-      const newsBubble = addBubble("Searching News...", "bot");
-      let newsText = "";
-      try {
-        const newsRes = await fetch(NEWS_ENDPOINT, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ query: topic }),
-          signal: abortController.signal
-        });
-        const newsData = await newsRes.json();
+  const topic = newsMatch[1].trim();
+  const newsBubble = addBubble("Searching News...", "bot");
+  let newsText = "";
+  try {
+    const newsRes = await fetch(NEWS_ENDPOINT, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ query: topic }),
+      signal: abortController.signal
+    });
+    const newsData = await newsRes.json();
 
-        if (newsData.error) {
-          newsBubble.wrapper.remove();
-          thinkingBubble.wrapper.remove();
-          addBubble(`⚠️ News Error: ${newsData.error}`, "bot");
-          return;
-        }
+    if (newsData.error) {
+      newsBubble.wrapper.remove();
+      thinkingBubble.wrapper.remove();
+      addBubble(`⚠️ News Error: ${newsData.error}`, "bot");
+      return;
+    }
 
-        if (!newsData.articles || !Array.isArray(newsData.articles)) {
-          newsBubble.wrapper.remove();
-          thinkingBubble.wrapper.remove();
-          addBubble(`⚠️ News Error: Invalid or empty articles data`, "bot");
-          return;
-        }
+    if (!newsData.articles || !Array.isArray(newsData.articles)) {
+      newsBubble.wrapper.remove();
+      thinkingBubble.wrapper.remove();
+      addBubble(`⚠️ News Error: Invalid or empty articles data`, "bot");
+      return;
+    }
 
-        images = newsData.articles.reduce((acc, article) => {
-          if (article.images && Array.isArray(article.images)) {
-            return [...acc, ...article.images];
-          }
-          return acc;
-        }, []);
-
-        newsText = formatNewsResponse(newsData);
-        const systemMessage = {
-          role: "system",
-          content: systemPrompts.news.replace("{news_data}", JSON.stringify(newsData)),
-          id: `system-${Date.now()}`
-        };
-        currentChat = [
-          ...currentChat.slice(0, -1),
-          systemMessage,
-          currentChat[currentChat.length - 1]
-        ];
-        augmentedMessages = [
-          ...currentChat.slice(0, -1),
-          systemMessage,
-          currentChat[currentChat.length - 1]
-        ];
-        sourceUrl = "SearxNG News Search";
-        crawledText = JSON.stringify(newsData);
-        metadata = { fromNews: true };
-        currentContextLength = calculateChatTokens();
-        updateProgressBar(currentContextLength, maxContextLength);
-        console.log("currentChat after adding news system message:", JSON.stringify(currentChat, null, 2));
-      } catch (err) {
-        if (err.name === "AbortError") return;
-        newsBubble.wrapper.remove();
-        thinkingBubble.wrapper.remove();
-        addBubble(`⚠️ News Error: ${err.message}`, "bot");
-        setSending(false);
-        inputEl.focus();
-        return;
-      } finally {
-        try { newsBubble.wrapper.remove(); } catch (e) {}
+    // Structure images with sourceUrl for each article
+    images = newsData.articles.reduce((acc, article) => {
+      if (article.images && Array.isArray(article.images)) {
+        return [...acc, ...article.images.map(img => ({
+          url: img,
+          sourceUrl: article.site || "" // Associate each image with its article's source URL
+        }))];
       }
-    } else if (searchMatch) {
+      return acc;
+    }, []);
+
+    newsText = formatNewsResponse(newsData);
+    const systemMessage = {
+      role: "system",
+      content: systemPrompts.news.replace("{news_data}", JSON.stringify(newsData)),
+      id: `system-${Date.now()}`
+    };
+    currentChat = [
+      ...currentChat.slice(0, -1),
+      systemMessage,
+      currentChat[currentChat.length - 1]
+    ];
+    augmentedMessages = [
+      ...currentChat.slice(0, -1),
+      systemMessage,
+      currentChat[currentChat.length - 1]
+    ];
+    sourceUrl = "SearxNG News Search";
+    crawledText = JSON.stringify(newsData);
+    metadata = { fromNews: true };
+    currentContextLength = calculateChatTokens();
+    updateProgressBar(currentContextLength, maxContextLength);
+    console.log("currentChat after adding news system message:", JSON.stringify(currentChat, null, 2));
+  } catch (err) {
+    if (err.name === "AbortError") return;
+    newsBubble.wrapper.remove();
+    thinkingBubble.wrapper.remove();
+    addBubble(`⚠️ News Error: ${err.message}`, "bot");
+    setSending(false);
+    inputEl.focus();
+    return;
+  } finally {
+    try { newsBubble.wrapper.remove(); } catch (e) {}
+  }
+} else if (searchMatch) {
       const query = searchMatch[1].trim();
       const searchBubble = addBubble("Searching...", "bot");
       let searchText = "";
@@ -1693,26 +1716,35 @@ async function sendMessage(isRetry = false) {
         updateProgressBar(currentContextLength, maxContextLength);
         addPreCopyButtons(botBubble.bubble);
         if (images && images.length > 0 && !youtubeId) {
-          const imageContainer = document.createElement("div");
-          imageContainer.className = "image-container";
-          images.forEach(src => {
-            const img = document.createElement("img");
-            img.src = src;
-            img.alt = finalMetadata && finalMetadata.fromWebSearch ? "Thumbnail from web search result" : finalMetadata && finalMetadata.fromNews ? "Thumbnail from news article" : "Thumbnail from crawled page";
-            img.className = "image-thumbnail";
-            img.setAttribute("loading", "lazy");
-            img.addEventListener("click", () => {
-              expandedImage.src = src;
-              imageModal.classList.add("active");
-            });
-            img.onerror = () => {
-              console.warn(`Failed to load image: ${src}`);
-              img.style.display = "none";
-            };
-            imageContainer.appendChild(img);
-          });
-          botBubble.bubble.appendChild(imageContainer);
-        }
+  const imageContainer = document.createElement("div");
+  imageContainer.className = "image-container";
+  images.forEach((imgData, idx) => {
+    const img = document.createElement("img");
+    img.src = imgData.url || imgData; // Assume imgData is { url, sourceUrl }
+    img.alt = finalMetadata && finalMetadata.fromWebSearch ? "Thumbnail from web search result" : finalMetadata && finalMetadata.fromNews ? "Thumbnail from news article" : "Thumbnail from crawled page";
+    img.className = "image-thumbnail";
+    img.setAttribute("loading", "lazy");
+    // Store only the source URL
+    img.dataset.sourceUrl = imgData.sourceUrl || finalSourceUrl || "";
+    img.addEventListener("click", () => {
+      expandedImage.src = img.src;
+      // Update source container with only the article link
+      const sourceLinkEl = document.getElementById("imageSourceLink");
+      if (img.dataset.sourceUrl) {
+        sourceLinkEl.innerHTML = `<a href="${img.dataset.sourceUrl}" target="_blank" rel="noopener noreferrer">${img.dataset.sourceUrl}</a>`;
+      } else {
+        sourceLinkEl.innerHTML = "No source URL available";
+      }
+      imageModal.classList.add("active");
+    });
+    img.onerror = () => {
+      console.warn(`Failed to load image: ${img.src}`);
+      img.style.display = "none";
+    };
+    imageContainer.appendChild(img);
+  });
+  botBubble.bubble.appendChild(imageContainer);
+}
       }
       if (!chunk && !botBubble) {
         try { thinkingBubble.wrapper.remove(); } catch (e) { console.warn("Error removing thinking bubble:", e); }
