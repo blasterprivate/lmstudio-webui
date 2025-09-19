@@ -1,152 +1,150 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>LM Studio — webui</title>
-<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/dompurify@2.4.0/dist/purify.min.js"></script>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"/>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" />
-<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-css.min.js"></script> 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
-<link rel="stylesheet" href="style.css">
-</head>
-<body>
-<div class="app">
-  <button id="scrollBtn" aria-label="Scroll to bottom">
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="stroke-[2] -mb-0.5">
-      <path d="M6 9L12 15L18 9" stroke="currentColor" stroke-linecap="square"></path>
-    </svg>
-  </button>
-  <main class="main">
-    <header class="topbar">
-      <div class="model-selector">
-        <button id="modelBtn" class="model-btn" aria-expanded="false" aria-controls="modelList">
-          Select Model <i class="fas fa-chevron-down" style="margin-left: 6px;"></i>
-        </button>
-        <div class="model-progress-container">
-          <progress id="context-progress" value="0" max="100"></progress>
-          <div id="context-label"></div>
-        </div>
-        <ul id="modelList" class="model-list" role="listbox" aria-label="Available models"></ul>
-      </div>
-    </header>
-    <section id="messages" class="messages" role="log" aria-live="polite"></section>
-    <footer class="composer-wrap">
-      <div class="composer">
-        <button id="settingsBtn" class="settings-btn" title="Edit System Prompts">
-          <i class="fas fa-cog"></i>
-        </button>
-        <button id="pdfBtn" title="Upload PDF">
-          <i class="fas fa-file-pdf"></i>
-        </button>
-        <input id="pdfInput" type="file" accept="application/pdf" style="display:none" />
-        <button id="youtubeToggleBtn" class="youtube-btn" title="Toggle YouTube Embeds">
-          <i class="fab fa-youtube"></i>
-        </button>
-        <button id="webBtn" aria-label="Toggle Web Search">
-          <i class="fas fa-globe"></i>
-        </button>
-        <textarea id="input" class="input" rows="1" placeholder="Ask anything..."></textarea>
-        <button id="sendBtn" class="btn primary" aria-label="Send message">
-          <svg class="send-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
-            <path d="M15.854.146a.5.5 0 0 0-.537-.097l-15 7a.5.5 0 0 0 0 .902l15 7a.5.5 0 0 0 .683-.558L13.682 8l2.855-7.146a.5.5 0 0 0-.683-.708z"/>
-          </svg>
-          <svg class="stop-icon" style="display: none;" xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
-            <path d="M4 4h8v8H4z" fill-rule="evenodd"/>
-          </svg>
-        </button>
-      </div>
-      <div id="modalOverlay" class="modal-overlay"></div>
-      <div id="crawlModal" class="modal">
-        <div id="modalContent" class="modal-content"></div>
-      </div>
-      <div id="settingsModal" class="modal">
-        <div id="settingsModalContent" class="settings-modal-content"></div>
-      </div>
-      <div id="imageModal" class="modal image-modal">
-          <button class="close-btn" aria-label="Close image modal">✕</button>
-  <img id="expandedImage" src="" alt="Expanded image">
-  <div id="imageSourceContainer">
-    <p id="imageSourceLink"></p>
-  </div>
-      </div>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>LM Studio — webui</title>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@2.4.0/dist/purify.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-css.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
+    <link rel="stylesheet" href="style.css">
+  </head>
+  <body>
+    <div class="app">
+      <button id="scrollBtn" aria-label="Scroll to bottom">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="stroke-[2] -mb-0.5">
+          <path d="M6 9L12 15L18 9" stroke="currentColor" stroke-linecap="square"></path>
+        </svg>
+      </button>
+      <main class="main">
+        <header class="topbar">
+          <div class="model-selector">
+            <button id="modelBtn" class="model-btn" aria-expanded="false" aria-controls="modelList"> Select Model <i class="fas fa-chevron-down" style="margin-left: 6px;"></i>
+            </button>
+            <div class="model-progress-container">
+              <progress id="context-progress" value="0" max="100"></progress>
+              <div id="context-label"></div>
+            </div>
+            <ul id="modelList" class="model-list" role="listbox" aria-label="Available models"></ul>
+          </div>
+        </header>
+        <section id="messages" class="messages" role="log" aria-live="polite"></section>
+        <footer class="composer-wrap">
+          <div class="composer">
+            <button id="settingsBtn" class="settings-btn" title="Edit System Prompts">
+              <i class="fas fa-cog"></i>
+            </button>
+            <button id="pdfBtn" title="Upload PDF">
+              <i class="fas fa-file-pdf"></i>
+            </button>
+            <input id="pdfInput" type="file" accept="application/pdf" style="display:none" />
+            <button id="youtubeToggleBtn" class="youtube-btn" title="Toggle YouTube Embeds">
+              <i class="fab fa-youtube"></i>
+            </button>
+            <button id="webBtn" aria-label="Toggle Web Search">
+              <i class="fas fa-globe"></i>
+            </button>
+            <textarea id="input" class="input" rows="1" placeholder="Ask anything..."></textarea>
+            <button id="sendBtn" class="btn primary" aria-label="Send message">
+              <svg class="send-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
+                <path d="M15.854.146a.5.5 0 0 0-.537-.097l-15 7a.5.5 0 0 0 0 .902l15 7a.5.5 0 0 0 .683-.558L13.682 8l2.855-7.146a.5.5 0 0 0-.683-.708z" />
+              </svg>
+              <svg class="stop-icon" style="display: none;" xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
+                <path d="M4 4h8v8H4z" fill-rule="evenodd" />
+              </svg>
+            </button>
+          </div>
+          <div id="modalOverlay" class="modal-overlay"></div>
+          <div id="crawlModal" class="modal">
+            <div id="modalContent" class="modal-content"></div>
+          </div>
+          <div id="settingsModal" class="modal">
+            <div id="settingsModalContent" class="settings-modal-content"></div>
+          </div>
+          <div id="imageModal" class="modal image-modal">
+            <button class="close-btn" aria-label="Close image modal">✕</button>
+            <img id="expandedImage" src="" alt="Expanded image">
+            <div id="imageSourceContainer">
+              <p id="imageSourceLink"></p>
+            </div>
+          </div>
+        </footer>
+      </main>
+    </div>
+    <script src="api.js"></script>
+    <style>
+      .star {
+        position: fixed;
+        border-radius: 50%;
+        background: white;
+        opacity: 0;
+        animation: drift linear infinite;
+        display: none;
+        /* Initially hidden */
+      }
 
-    </footer>
-  </main>
-</div>
-<script src="api.js"></script>
-<style>
-  .star {
-    position: fixed;
-    border-radius: 50%;
-    background: white;
-    opacity: 0;
-    animation: drift linear infinite;
-    display: none; /* Initially hidden */
-  }
-  @keyframes drift {
-    0% {
-      transform: translateY(0) translateX(0);
-      opacity: 0.8;
-    }
-    50% {
-      opacity: 0.4;
-    }
-    100% {
-      transform: translateY(-50vh) translateX(50vw);
-      opacity: 0.8;
-    }
-  }
-</style>
-<script>
-  const starCount = 50;
-  let idleTimer;
-  const idleThreshold = 60000; // 10 seconds in ms
-  let isIdle = false;
+      @keyframes drift {
+        0% {
+          transform: translateY(0) translateX(0);
+          opacity: 0.8;
+        }
 
-  // Function to reset idle timer
-  function resetIdleTimer() {
-    isIdle = false;
-    document.querySelectorAll('.star').forEach(star => {
-      star.style.opacity = '0';
-      star.style.display = 'none';
-    });
-    clearTimeout(idleTimer);
-    idleTimer = setTimeout(() => {
-      isIdle = true;
-      document.querySelectorAll('.star').forEach(star => {
-        star.style.opacity = '0.8';
-        star.style.display = 'block';
-      });
-    }, idleThreshold);
-  }
+        50% {
+          opacity: 0.4;
+        }
 
-  // Event listeners for user activity
-  document.addEventListener('mousemove', resetIdleTimer);
-  document.addEventListener('mousedown', resetIdleTimer);
-  document.addEventListener('keypress', resetIdleTimer);
-  document.addEventListener('scroll', resetIdleTimer);
-  document.addEventListener('touchstart', resetIdleTimer); // For mobile
-
-  // Create stars
-  for (let i = 0; i < starCount; i++) {
-    const star = document.createElement('div');
-    star.className = 'star';
-    star.style.top = `${Math.random() * window.innerHeight}px`;
-    star.style.left = `${Math.random() * window.innerWidth}px`;
-    const size = 1 + Math.random() * 2;
-    star.style.width = `${size}px`;
-    star.style.height = `${size}px`;
-    star.style.animationDuration = `${60 + Math.random() * 60}s`;
-    document.body.appendChild(star);
-  }
-
-  // Start the idle timer
-  resetIdleTimer();
-</script>
-</body>
+        100% {
+          transform: translateY(-50vh) translateX(50vw);
+          opacity: 0.8;
+        }
+      }
+    </style>
+    <script>
+      const starCount = 50;
+      let idleTimer;
+      const idleThreshold = 60000; // 10 seconds in ms
+      let isIdle = false;
+      // Function to reset idle timer
+      function resetIdleTimer() {
+        isIdle = false;
+        document.querySelectorAll('.star').forEach(star => {
+          star.style.opacity = '0';
+          star.style.display = 'none';
+        });
+        clearTimeout(idleTimer);
+        idleTimer = setTimeout(() => {
+          isIdle = true;
+          document.querySelectorAll('.star').forEach(star => {
+            star.style.opacity = '0.8';
+            star.style.display = 'block';
+          });
+        }, idleThreshold);
+      }
+      // Event listeners for user activity
+      document.addEventListener('mousemove', resetIdleTimer);
+      document.addEventListener('mousedown', resetIdleTimer);
+      document.addEventListener('keypress', resetIdleTimer);
+      document.addEventListener('scroll', resetIdleTimer);
+      document.addEventListener('touchstart', resetIdleTimer); // For mobile
+      // Create stars
+      for (let i = 0; i < starCount; i++) {
+        const star = document.createElement('div');
+        star.className = 'star';
+        star.style.top = `${Math.random() * window.innerHeight}px`;
+        star.style.left = `${Math.random() * window.innerWidth}px`;
+        const size = 1 + Math.random() * 2;
+        star.style.width = `${size}px`;
+        star.style.height = `${size}px`;
+        star.style.animationDuration = `${60 + Math.random() * 60}s`;
+        document.body.appendChild(star);
+      }
+      // Start the idle timer
+      resetIdleTimer();
+    </script>
+  </body>
 </html>
