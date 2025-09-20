@@ -23,6 +23,54 @@ const settingsBtn = document.getElementById("settingsBtn");
 const imageModal = document.getElementById("imageModal");
 const expandedImage = document.getElementById("expandedImage");
 
+// Action Menu Modal Handling
+const actionMenuBtn = document.getElementById('actionMenuBtn');
+const actionMenuModal = document.getElementById('actionMenuModal');
+const actionMenuCloseBtn = actionMenuModal.querySelector('.close-btn');
+const actionWebSearch = document.getElementById('actionWebSearch');
+const actionYouTube = document.getElementById('actionYouTube');
+const actionPDF = document.getElementById('actionPDF');
+const actionSettings = document.getElementById('actionSettings');
+
+
+function toggleActionMenuModal() {
+  actionMenuModal.classList.toggle('active');
+  modalOverlay.classList.toggle('active');
+}
+
+actionMenuBtn.addEventListener('click', toggleActionMenuModal);
+actionMenuCloseBtn.addEventListener('click', toggleActionMenuModal);
+
+actionWebSearch.addEventListener('click', () => {
+  document.getElementById('webBtn').click();
+  toggleActionMenuModal();
+});
+
+actionYouTube.addEventListener('click', () => {
+  document.getElementById('youtubeToggleBtn').click();
+  toggleActionMenuModal();
+});
+
+actionPDF.addEventListener('click', () => {
+  document.getElementById('pdfInput').click();
+  toggleActionMenuModal();
+});
+
+actionSettings.addEventListener('click', () => {
+  document.getElementById('settingsBtn').click();
+  toggleActionMenuModal();
+});
+
+
+// Update existing modalOverlay listener to include actionMenuModal
+modalOverlay.addEventListener('click', () => {
+  modalEl.classList.remove('active');
+  settingsModal.classList.remove('active');
+  imageModal.classList.remove('active');
+  actionMenuModal.classList.remove('active');
+  modalOverlay.classList.remove('active');
+});
+
 // Auto-scroll flag (starts enabled)
 let autoScroll = true;
 
@@ -174,24 +222,31 @@ Here is the user-provided code:
 \`\`\`
 
 Please proceed with the user's request.`,
-    news: `You are a news-savvy AI assistant designed to deliver clear, balanced, and engaging summaries based on recent news articles in JSON format.
+    news: `You’re a news-savvy AI. Use the JSON below to create a concise Markdown news brief.
 
-Here are the relevant news results:
 ----- NEWS RESULTS START -----
 {news_data}
 ----- NEWS RESULTS END -----
 
-Your task:
-- Parse the JSON news data, which includes a top summary and an array of articles (with site URLs, titles, summaries, and optional metadata like publication date or meta description).
-- Sort articles by publication date (latest to oldest) if available in metadata or inferred from summaries. If no dates are available, prioritize relevance to the user’s query or maintain JSON order.
-- Deliver a response in Markdown format with:
-  - **## News Overview**: A concise, engaging summary (3-5 sentences) synthesizing key events, trends, or insights across articles. Highlight broader context, implications, differing perspectives, or emerging patterns while maintaining neutrality.
-  - **## Recent Articles**: A Markdown table with columns for Date (if available), Source (hostname, e.g., "nytimes.com"), Summary (2-4 sentences capturing main points, key facts, quotes, or unique insights), and Link (formatted as "[Title](URL)").
-  - For highly similar articles (e.g., covering the same event), group them into a single table row with a combined summary that synthesizes shared and unique insights, listing all sources and links to avoid redundancy.
-- Integrate metadata naturally (e.g., "Reported on [date] by [source]").
-- If no relevant articles or valid data are available, politely explain (e.g., "No recent news found for [query]. Would you like me to search again or provide background info?") and offer general knowledge if applicable.
-- Use a clear, neutral, and engaging tone suitable for news reporting, ensuring accessibility and depth for a general audience.
-- Example tone: "Here’s the latest on [query]—let’s break down the key stories!"`,
+**Instructions:**
+- Parse JSON (top_summary + articles with site/title/summary/times/links).
+- Sort articles by date (YYYY-MM-DD newest first). If no date → "Date unavailable".
+- Group similar articles by topic; synthesize a single 2–4 sentence summary per group, noting unique angles or disagreements.
+- Output in Markdown:
+
+## News Overview  
+3–5 sentences summarizing main themes and context (neutral tone).
+
+## Recent Articles  
+| Date | Source | Summary |  
+|------|---------------|---------|  
+| YYYY-MM-DD | [site1.com](URL1), [site2.com](URL2) | Synthesized summary of grouped or single articles |  
+
+**Guidelines:**
+- Be neutral, factual, concise.
+- If no valid articles → say: "No recent news found for [topic]" and offer brief context.
+- Avoid redundancy, don’t invent facts, attribute unique points when possible.
+`,
 
     youtube: `You are an AI assistant tasked with summarizing YouTube video transcripts to provide clear, engaging, and accurate responses.
 
@@ -1504,16 +1559,27 @@ async function sendMessage(isRetry = false) {
 
                 // Structure images with sourceUrl for each article
                 images = newsData.articles.reduce((acc, article) => {
-                    if (article.images && Array.isArray(article.images)) {
-                        return [...acc, ...article.images.map(img => ({
-                            url: img,
-                            sourceUrl: article.site || "" // Associate each image with its article's source URL
-                        }))];
-                    }
-                    return acc;
-                }, []);
+    if (article.images && Array.isArray(article.images)) {
+        return [...acc, ...article.images.map(img => ({
+            url: img,
+            sourceUrl: article.site || "",
+            metaDescription: (article.meta_description && article.meta_description !== "* * *") ? article.meta_description : (article.title || "No description available") // Enhanced fallback
+        }))];
+    }
+    return acc;
+}, []);
 
                 newsText = formatNewsResponse(newsData);
+                // Map articles to include datetime from times[0]
+const mappedNewsData = newsData.articles.map(article => ({
+    title: article.title || "No title",
+    site: article.site || "",
+    url: article.url || "",
+    summary: article.summary || article.meta_description || "No summary available",
+    images: Array.isArray(article.images) ? article.images : [],
+    datetime: (article.times && article.times[0] && article.times[0].datetime) || null
+}));
+
                 const systemMessage = {
                     role: "system",
                     content: systemPrompts.news.replace("{news_data}", JSON.stringify(newsData)),
@@ -1581,12 +1647,16 @@ async function sendMessage(isRetry = false) {
                     return;
                 }
 
-                images = searchData.reduce((acc, result) => {
-                    if (result.images && Array.isArray(result.images)) {
-                        return [...acc, ...result.images];
-                    }
-                    return acc;
-                }, []);
+                images = searchData.reduce((acc, result, idx) => {
+    if (result.images && Array.isArray(result.images)) {
+        return [...acc, ...result.images.map(img => ({
+            url: img,
+            sourceUrl: result.site || "",  // Use the specific result.site as valid URL
+            metaDescription: result.meta_description || result.title   // Associate with this result's meta_description
+        }))];
+    }
+    return acc;
+}, []);
 
                 searchText = formatWebsearchResponse(searchData);
                 const systemMessage = {
@@ -1642,11 +1712,15 @@ async function sendMessage(isRetry = false) {
                 let searchData = await searchRes.json();
                 if (searchRes.ok && Array.isArray(searchData) && searchData.length > 0) {
                     images = searchData.reduce((acc, result) => {
-                        if (result.images && Array.isArray(result.images)) {
-                            return [...acc, ...result.images];
-                        }
-                        return acc;
-                    }, []);
+    if (result.images && Array.isArray(result.images)) {
+        return [...acc, ...result.images.map(img => ({
+            url: img,
+            sourceUrl: result.site || "",
+            metaDescription: (result.meta_description && result.meta_description !== "* * *") ? result.meta_description : (result.title || "No description available") // Enhanced fallback
+        }))];
+    }
+    return acc;
+}, []);
 
                     const searchContext = formatWebsearchResponse(searchData);
                     const systemMessage = {
@@ -1840,30 +1914,37 @@ async function sendMessage(isRetry = false) {
                     const imageContainer = document.createElement("div");
                     imageContainer.className = "image-container";
                     images.forEach((imgData, idx) => {
-                        const img = document.createElement("img");
-                        img.src = imgData.url || imgData; // Assume imgData is { url, sourceUrl }
-                        img.alt = finalMetadata && finalMetadata.fromWebSearch ? "Thumbnail from web search result" : finalMetadata && finalMetadata.fromNews ? "Thumbnail from news article" : "Thumbnail from crawled page";
-                        img.className = "image-thumbnail";
-                        img.setAttribute("loading", "lazy");
-                        // Store only the source URL
-                        img.dataset.sourceUrl = imgData.sourceUrl || finalSourceUrl || "";
-                        img.addEventListener("click", () => {
-                            expandedImage.src = img.src;
-                            // Update source container with only the article link
-                            const sourceLinkEl = document.getElementById("imageSourceLink");
-                            if (img.dataset.sourceUrl) {
-                                sourceLinkEl.innerHTML = `<a href="${img.dataset.sourceUrl}" target="_blank" rel="noopener noreferrer">${img.dataset.sourceUrl}</a>`;
-                            } else {
-                                sourceLinkEl.innerHTML = "No source URL available";
-                            }
-                            imageModal.classList.add("active");
-                        });
-                        img.onerror = () => {
-                            console.warn(`Failed to load image: ${img.src}`);
-                            img.style.display = "none";
-                        };
-                        imageContainer.appendChild(img);
-                    });
+    const img = document.createElement("img");
+    img.src = imgData.url || imgData; // Fallback for plain string images
+    img.alt = finalMetadata && finalMetadata.fromWebSearch ? "Thumbnail from web search result" : finalMetadata && finalMetadata.fromNews ? "Thumbnail from news article" : "Thumbnail from crawled page";
+    img.className = "image-thumbnail";
+    img.setAttribute("loading", "lazy");
+    // Store source URL and meta_description
+    img.dataset.sourceUrl = imgData.sourceUrl || finalSourceUrl || "";
+    img.dataset.metaDescription = imgData.metaDescription || "";  // New: Store meta_description
+    img.addEventListener("click", () => {
+    expandedImage.src = img.src;
+    const sourceLinkEl = document.getElementById("imageSourceLink");
+    const sourceUrl = img.dataset.sourceUrl;
+    const metaDesc = img.dataset.metaDescription;
+    if (sourceUrl) {
+        const isValidUrl = /^https?:\/\//.test(sourceUrl);
+        if (isValidUrl) {
+            sourceLinkEl.innerHTML = `<a href="${sourceUrl}" target="_blank" rel="noopener noreferrer">${sourceUrl}</a><br><small>${metaDesc || "No description available"}</small>`;
+        } else {
+            sourceLinkEl.innerHTML = `${sourceUrl}<br><small>${metaDesc || "No description available"}</small>`;
+        }
+    } else {
+        sourceLinkEl.innerHTML = "No source URL available";
+    }
+    imageModal.classList.add("active");
+});
+    img.onerror = () => {
+        console.warn(`Failed to load image: ${img.src}`);
+        img.style.display = "none";
+    };
+    imageContainer.appendChild(img);
+});
                     botBubble.bubble.appendChild(imageContainer);
                 }
             }
