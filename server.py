@@ -1,30 +1,31 @@
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from datetime import datetime
+from io import BytesIO
+from pathlib import Path
+from urllib.parse import urlparse
+from PIL import Image
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-import requests
-from bs4 import BeautifulSoup
-import re
-import logging
-import json
-from pathlib import Path
 from youtube_transcript_api import YouTubeTranscriptApi
-from datetime import datetime
-from urllib.parse import urlparse
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
-from pytube import YouTube
-import yt_dlp
-import time
-import random
-from timezonefinder import TimezoneFinder
-import pytz
-import pdfplumber
 import io
-from io import BytesIO
-from PIL import Image
-from concurrent.futures import ThreadPoolExecutor, as_completed
+import json
+import logging
+import pytube
+import pytz
+import random
+import re
+import requests
+import time
+import yt_dlp
+import pdfplumber
+import timezonefinder
+from bs4 import BeautifulSoup
 
 # Constants
 CACHE_DIR = Path("./webui_cache/")
+WEBPAGE_CACHE_TTL = 86400  # 24 hours in seconds
 USER_AGENTS = [
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36",
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.1 Safari/605.1.15",
@@ -70,22 +71,29 @@ BLOCKED_TLDS = [
     ".tw", ".ua", ".uy", ".uz", ".ve", ".vn", ".ye", ".za", ".zm", ".zw"
 ]
 SEARXNG_URL = "http://127.0.0.1:8888/search"
-max_sources = 10
+max_sources = 20
 MAX_LOGO_WIDTH = 150
 MAX_LOGO_HEIGHT = 150
 REQUEST_TIMEOUT = 5
 IMAGE_TIMEOUT = 5
 WEATHER_TIMEOUT = 5
-SEARCH_TIMEOUT = 10
+SEARCH_TIMEOUT = 5
 MAX_RETRIES = 1
+
+# Logging and Flask setup
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 SESSION = requests.Session()
 app = Flask(__name__)
 CORS(app)
 CACHE_DIR.mkdir(parents=True, exist_ok=True)
+
+# Cache initialization
 _TRANSCRIPT_CACHE = {}
 _METADATA_CACHE = {}
 _WEATHER_CACHE = {}
+_WEBPAGE_CACHE = {}
+
+
 def _load_cache(name: str) -> dict:
     path = CACHE_DIR / f"{name}.json"
     try:
@@ -94,6 +102,8 @@ def _load_cache(name: str) -> dict:
         return data if isinstance(data, dict) else {}
     except Exception:
         return {}
+
+
 def _save_cache(name: str, data: dict) -> None:
     path = CACHE_DIR / f"{name}.json"
     try:
@@ -101,14 +111,21 @@ def _save_cache(name: str, data: dict) -> None:
             json.dump(data, fp, ensure_ascii=False)
     except Exception as exc:
         logging.warning(f"Failed to save cache {path}: {exc}")
+
+
 _TRANSCRIPT_CACHE = _load_cache("transcripts")
 _METADATA_CACHE = _load_cache("metadata")
 _WEATHER_CACHE = _load_cache("weather")
+_WEBPAGE_CACHE = _load_cache("webpages")
+
+
 def _safe_json_dumps(data):
     try:
         return json.dumps(data, ensure_ascii=False)
     except Exception:
         return json.dumps({"error": "Failed to serialize JSON"})
+
+
 def _extract_video_id(url_or_id: str) -> str:
     if url_or_id.startswith("http"):
         if "youtube.com/watch?v=" in url_or_id:
@@ -116,6 +133,8 @@ def _extract_video_id(url_or_id: str) -> str:
         elif "youtu.be/" in url_or_id:
             return url_or_id.split("youtu.be/")[1].split("?")[0]
     return url_or_id
+
+
 def make_session():
     session = requests.Session()
     retry = Retry(total=MAX_RETRIES, backoff_factor=0.1, status_forcelist=[500, 502, 503, 504])
@@ -123,6 +142,8 @@ def make_session():
     session.mount('http://', adapter)
     session.mount('https://', adapter)
     return session
+
+
 def weather_code_to_description(code: int) -> str:
     weather_codes = {
         0: "Clear sky",
@@ -145,6 +166,8 @@ def weather_code_to_description(code: int) -> str:
         99: "Thunderstorm with heavy hail"
     }
     return weather_codes.get(code, "Unknown")
+
+
 def get_weather_emoji(code: int, current_time: datetime = None, sunrise: str = None, sunset: str = None) -> str:
     day_emojis = {
         0: "☀️", 1: "☀️", 2: "⛅", 3: "☁️",
@@ -173,6 +196,8 @@ def get_weather_emoji(code: int, current_time: datetime = None, sunrise: str = N
         except Exception:
             pass
     return day_emojis.get(code, "")
+
+
 def get_air_quality_advisory(pm25: float) -> dict:
     if pm25 <= 10:
         return {"level": "Good", "message": "Air quality is good. No precautions necessary."}
@@ -184,6 +209,8 @@ def get_air_quality_advisory(pm25: float) -> dict:
         return {"level": "Unhealthy", "message": "Everyone may experience health effects; sensitive groups should avoid outdoor activity."}
     else:
         return {"level": "Hazardous", "message": "Health alert: everyone should avoid outdoor activity."}
+
+
 def get_uv_band(uv_index: float) -> dict:
     if uv_index <= 2:
         return {"band": "Low", "advice": "Minimal protection required. Wear sunglasses on bright days."}
@@ -195,13 +222,17 @@ def get_uv_band(uv_index: float) -> dict:
         return {"band": "Very High", "advice": "Take extra precautions: use SPF 50+, seek shade, and avoid sun from 10 AM to 4 PM."}
     else:
         return {"band": "Extreme", "advice": "Avoid sun exposure; use maximum protection if outdoors."}
+
+
 def get_timezone_from_coords(lat: float, lon: float) -> str:
     try:
-        tf = TimezoneFinder()
+        tf = timezonefinder.TimezoneFinder()
         tz_name = tf.timezone_at(lat=lat, lng=lon)
         return tz_name or "UTC"
     except Exception:
         return "UTC"
+
+
 def fetch_coordinates(city: str) -> tuple:
     try:
         session = make_session()
@@ -217,14 +248,18 @@ def fetch_coordinates(city: str) -> tuple:
         return lat, lon, display_name, None
     except Exception as e:
         return None, None, None, f"Failed to fetch coordinates: {str(e)}"
+
+
 def weather_assistant(city: str) -> dict:
     cache_key = f"{city}:{datetime.now().strftime('%Y-%m-%d')}"
     cached = _WEATHER_CACHE.get(cache_key)
     if cached and time.time() - cached["timestamp"] < 3600:
         return cached["data"]
+    
     lat, lon, display_name, error = fetch_coordinates(city)
     if error:
         return {"error": error}
+    
     city_name_clean = display_name.split(",")[0]
     try:
         session = make_session()
@@ -241,6 +276,7 @@ def weather_assistant(city: str) -> dict:
         resp = session.get(weather_url, headers=headers, timeout=WEATHER_TIMEOUT)
         resp.raise_for_status()
         weather_data = resp.json()
+        
         air_quality_url = (
             f"https://air-quality-api.open-meteo.com/v1/air-quality?"
             f"latitude={lat}&longitude={lon}"
@@ -249,10 +285,12 @@ def weather_assistant(city: str) -> dict:
         air_resp = session.get(air_quality_url, headers=headers, timeout=WEATHER_TIMEOUT)
         air_resp.raise_for_status()
         air_quality_data = air_resp.json()
+        
         timezone = get_timezone_from_coords(lat, lon)
         city_time = datetime.now(pytz.timezone(timezone)).strftime("%Y-%m-%d %H:%M:%S %Z")
         current_time_obj = datetime.now(pytz.timezone(timezone))
         current_hour = current_time_obj.hour
+        
         current = {
             "temperature": round(weather_data["current"]["temperature_2m"], 1),
             "humidity": weather_data["current"]["relative_humidity_2m"],
@@ -268,6 +306,7 @@ def weather_assistant(city: str) -> dict:
             sunrise=current["sunrise"],
             sunset=current["sunset"]
         )
+        
         air_quality = {
             "pm2_5": round(air_quality_data["current"]["pm2_5"], 1),
             "pm10": round(air_quality_data["current"]["pm10"], 1),
@@ -277,11 +316,13 @@ def weather_assistant(city: str) -> dict:
             "european_aqi": air_quality_data["current"]["european_aqi"],
             "advisory": get_air_quality_advisory(air_quality_data["current"]["pm2_5"]),
         }
+        
         uv = {
             "current_uv": round(weather_data["hourly"]["uv_index"][current_hour], 1) if weather_data["hourly"]["uv_index"] else "N/A",
             "uv_index_max": round(max(weather_data["hourly"]["uv_index"][:24]), 1) if weather_data["hourly"]["uv_index"] else "N/A",
             "uv_band": get_uv_band(max(weather_data["hourly"]["uv_index"][:24])) if weather_data["hourly"]["uv_index"] else {"band": "N/A", "advice": "No UV data available"},
         }
+        
         forecast = []
         for i in range(7):
             forecast.append({
@@ -297,6 +338,7 @@ def weather_assistant(city: str) -> dict:
                 "humidity_max": weather_data["daily"]["relative_humidity_2m_max"][i],
                 "humidity_min": weather_data["daily"]["relative_humidity_2m_min"][i],
             })
+        
         city_display = display_name or city or "Unknown"
         response = {
             "city_display": display_name,
@@ -309,6 +351,7 @@ def weather_assistant(city: str) -> dict:
             "air_quality": air_quality,
             "source": "Open-Meteo",
         }
+        
         _WEATHER_CACHE[cache_key] = {
             "timestamp": time.time(),
             "data": response
@@ -317,6 +360,8 @@ def weather_assistant(city: str) -> dict:
         return response
     except Exception as e:
         return {"error": f"Failed to fetch weather data: {str(e)}"}
+
+
 def is_valid_image_size(url: str, min_width: int = 600, min_height: int = 400, headers=None) -> bool:
     try:
         resp = requests.get(url, stream=True, timeout=IMAGE_TIMEOUT, headers=headers)
@@ -329,6 +374,8 @@ def is_valid_image_size(url: str, min_width: int = 600, min_height: int = 400, h
     except Exception as e:
         logging.warning(f"Failed to validate image size for {url}: {str(e)}")
         return False
+
+
 def safe_to_int(value, default=0):
     if not value:
         return default
@@ -338,9 +385,17 @@ def safe_to_int(value, default=0):
     except (ValueError, TypeError):
         logging.debug(f"Invalid dimension value: {value}, using default: {default}")
         return default
+
+
 def fetch_and_clean_webpage(url: str, chunk_size: int = 30000, min_words: int = 100,
-                            min_width: int = 600, min_height: int = 400,
-                            include_images: bool = True) -> dict:
+                           min_width: int = 300, min_height: int = 200,
+                           include_images: bool = True) -> dict:
+    cache_key = f"{url}:{str(include_images)}"
+    cached = _WEBPAGE_CACHE.get(cache_key)
+    if cached and time.time() - cached["timestamp"] < WEBPAGE_CACHE_TTL:
+        logging.info(f"Returning cached webpage data for {url} (include_images={include_images})")
+        return cached["data"]
+    
     headers = {
         "User-Agent": random.choice(USER_AGENTS),
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
@@ -348,6 +403,7 @@ def fetch_and_clean_webpage(url: str, chunk_size: int = 30000, min_words: int = 
         "Referer": "https://www.google.com/",
         "Connection": "keep-alive",
     }
+    
     try:
         time.sleep(random.uniform(0.5, 1.0))
         resp = requests.get(url, headers=headers, timeout=REQUEST_TIMEOUT)
@@ -355,18 +411,40 @@ def fetch_and_clean_webpage(url: str, chunk_size: int = 30000, min_words: int = 
         html = resp.text
     except requests.RequestException as e:
         logging.warning(f"Failed to fetch {url}: {str(e)}")
-        return {"site": url, "images": [], "content": "", "error": str(e)}
+        return {"site": url, "images": [], "content": "", "error": str(e), "times": []}
+    
     soup = BeautifulSoup(html, "html.parser")
     for el in soup(["script", "style", "noscript", "iframe", "footer", "nav", "aside"]):
         el.extract()
+    
     main_text = ""
     title = soup.find("title").get_text(strip=True) if soup.find("title") else ""
     meta_desc = soup.find("meta", attrs={"name": "description"})["content"] if soup.find("meta", attrs={"name": "description"}) else ""
+    
+    # Extract <time> elements with datetime attribute
+    time_elements = []
+    for time_tag in soup.find_all("time", datetime=True):
+        datetime_value = time_tag.get("datetime")
+        text_content = time_tag.get_text(strip=True)
+        class_attr = time_tag.get("class", [])
+        time_elements.append({
+            "datetime": datetime_value,
+            "text": text_content,
+            "class": class_attr
+        })
+    
+    # Append datetime info to main_text
+    if time_elements:
+        times_text = " | ".join([f"{t['text']} ({t['datetime']})" for t in time_elements])
+        main_text += "\n\nPublication times: " + times_text
+    
+    
     article = soup.find("article")
     main_container = soup.find("main") if not article else None
     content_div = soup.find("div", class_=['content', 'post', 'article-body', 'main-content']) if not article and not main_container else None
     body = soup.find("body") if not article and not main_container and not content_div else None
     container = article or main_container or content_div or body
+    
     if container:
         main_text = " ".join(
             p.get_text(" ", strip=True) for p in container.find_all(
@@ -396,8 +474,10 @@ def fetch_and_clean_webpage(url: str, chunk_size: int = 30000, min_words: int = 
             )
         if len(main_text.split()) < min_words:
             logging.info(f"No content extracted for {url}: word count below {min_words}")
-            return {"site": url, "images": [], "content": "", "error": "Not enough words"}
+            return {"site": url, "images": [], "content": "", "error": "Not enough words", "times": time_elements}
+    
     image_urls = []
+    fallback_image = None
     if include_images:
         img_tags = container.find_all("img")
         logging.info(f"Found {len(img_tags)} <img> tags for {url}")
@@ -411,7 +491,7 @@ def fetch_and_clean_webpage(url: str, chunk_size: int = 30000, min_words: int = 
                 parsed_url = urlparse(url)
                 src = f"{parsed_url.scheme}://{parsed_url.netloc}{src}"
             ext = src.lower().split("?")[0].split(".")[-1]
-            if ext not in ('jpg', 'jpeg', 'png'):
+            if ext not in ('jpg', 'jpeg', 'png', 'svg'):
                 continue
             alt_text = (img.get("alt") or "").lower()
             title_text = (img.get("title") or "").lower()
@@ -429,19 +509,48 @@ def fetch_and_clean_webpage(url: str, chunk_size: int = 30000, min_words: int = 
             if width <= MAX_LOGO_WIDTH and height <= MAX_LOGO_HEIGHT:
                 logging.info(f"Skipping small image (likely logo): {src}")
                 continue
+            if not fallback_image:
+                fallback_image = src  # Store the first non-logo image as fallback
             if width >= min_width and height >= min_height:
                 logging.info(f"Image {src} passed attribute size check: {width}x{height}")
                 image_urls.append(src)
+                break  # Stop after adding the first valid image
             else:
-                if ext != 'svg' and is_valid_image_size(src, min_width, min_height, headers=headers):
-                    image_urls.append(src)
-                elif ext == 'svg':
+                if ext == 'svg':
                     logging.info(f"SVG detected, adding without size check: {src}")
                     image_urls.append(src)
-            if len(image_urls) >= 10:
-                logging.info(f"Reached 10 valid images for {url}, stopping image collection")
-                break
-    return {"site": url, "images": image_urls, "content": main_text[:chunk_size], "title": title, "meta_description": meta_desc}
+                    break  # Stop after adding the first valid SVG image
+                try:
+                    if is_valid_image_size(src, min_width, min_height, headers=headers):
+                        logging.info(f"Image {src} passed dynamic size check")
+                        image_urls.append(src)
+                        break  # Stop after adding the first valid image
+                except Exception as e:
+                    logging.warning(f"Failed to validate image size for {src}: {str(e)}")
+                    continue
+        if not image_urls and fallback_image:
+            logging.info(f"No images met size criteria, using fallback image: {fallback_image}")
+            image_urls.append(fallback_image)
+    
+    result = {
+        "site": url,
+        "images": image_urls,
+        "content": main_text[:chunk_size],
+        "title": title,
+        "meta_description": meta_desc,
+        "times": time_elements
+    }
+    
+    _WEBPAGE_CACHE[cache_key] = {
+        "timestamp": time.time(),
+        "data": result
+    }
+    _save_cache("webpages", _WEBPAGE_CACHE)
+    logging.info(f"Cached webpage data for {url} (include_images={include_images})")
+    
+    return result
+
+
 def summarize_webpage(urls, max_words=500, target_count=max_sources, min_words=100, include_images=True, max_images=10):
     summaries = []
     total_images = 0
@@ -475,6 +584,8 @@ def summarize_webpage(urls, max_words=500, target_count=max_sources, min_words=1
             if len(summaries) >= target_count:
                 break
     return _safe_json_dumps(summaries)
+
+
 def fetch_youtube_content(video_url_or_id: str) -> dict:
     vid = _extract_video_id(video_url_or_id)
     transcript_data = get_youtube_transcript(vid)
@@ -487,6 +598,8 @@ def fetch_youtube_content(video_url_or_id: str) -> dict:
         "content": transcript_dict["transcript"],
         "metadata": metadata
     }
+
+
 def get_youtube_transcript(video_id: str) -> str:
     try:
         if video_id in _TRANSCRIPT_CACHE:
@@ -508,6 +621,8 @@ def get_youtube_transcript(video_id: str) -> str:
         return _safe_json_dumps({"transcript": transcript_text})
     except Exception as e:
         return _safe_json_dumps({"error": str(e)})
+
+
 def get_youtube_metadata(video_id: str) -> dict:
     try:
         if video_id in _METADATA_CACHE:
@@ -524,7 +639,7 @@ def get_youtube_metadata(video_id: str) -> dict:
                 "is_generated": False
             }
         except Exception:
-            yt = YouTube(url)
+            yt = pytube.YouTube(url)
             meta = {
                 "title": yt.title,
                 "channel_name": yt.author,
@@ -536,6 +651,8 @@ def get_youtube_metadata(video_id: str) -> dict:
         return meta
     except Exception as e:
         return {"title": None, "channel_name": None, "language": "Unknown", "is_generated": False, "error": str(e)}
+
+
 def extract_news_links(query: str, searxng_url=SEARXNG_URL, max_pages=3):
     results, seen = [], set()
     session = make_session()
@@ -561,6 +678,8 @@ def extract_news_links(query: str, searxng_url=SEARXNG_URL, max_pages=3):
             seen.add(url)
             results.append({"site": url, "title": r.get("title"), "snippet": r.get("content") or r.get("snippet")})
     return results
+
+
 def is_allowed_domain(url: str) -> bool:
     try:
         domain = urlparse(url).netloc.lower()
@@ -575,6 +694,8 @@ def is_allowed_domain(url: str) -> bool:
     except Exception as e:
         logging.warning(f"Failed to parse domain for {url}: {e}")
         return False
+
+
 def get_valid_urls(candidates, min_words=100, target_count=max_sources, include_images=False):
     valid_urls = []
     used_domains = set()
@@ -590,6 +711,7 @@ def get_valid_urls(candidates, min_words=100, target_count=max_sources, include_
         if not is_allowed_domain(url):
             continue
         domain_to_candidate[domain] = c
+    
     def process_url(candidate):
         url = candidate.get("site")
         if not url:
@@ -600,6 +722,7 @@ def get_valid_urls(candidates, min_words=100, target_count=max_sources, include_
         if "error" in data or not data.get("content"):
             return None, None
         return url, domain
+    
     with ThreadPoolExecutor(max_workers=10) as executor:
         futures = [executor.submit(process_url, c) for c in domain_to_candidate.values()]
         for future in as_completed(futures):
@@ -613,6 +736,8 @@ def get_valid_urls(candidates, min_words=100, target_count=max_sources, include_
             except Exception as e:
                 logging.warning(f"URL validation failed: {str(e)}")
     return valid_urls
+
+
 def news_assistant(topic: str):
     links_raw = extract_news_links(topic)
     if not links_raw:
@@ -624,6 +749,8 @@ def news_assistant(topic: str):
         "articles": summaries
     }
     return _safe_json_dumps(output)
+
+
 def websearch_assistant(topic: str):
     session = make_session()
     results = []
@@ -638,10 +765,13 @@ def websearch_assistant(topic: str):
         params = {"q": topic, "format": "json", "categories": "general", "language": "en", "p": page}
         try:
             time.sleep(random.uniform(0.5, 2.0))
+            logging.info(f"Fetching SearxNG page {page + 1} for query: {topic}")
             resp = session.get(SEARXNG_URL, params=params, headers=headers, timeout=SEARCH_TIMEOUT)
             resp.raise_for_status()
             data = resp.json()
-        except Exception:
+            logging.info(f"Retrieved {len(data.get('results', []))} results from page {page + 1}")
+        except Exception as e:
+            logging.warning(f"Failed to fetch page {page + 1}: {str(e)}")
             continue
         for r in data.get("results", []):
             url = r.get("url")
@@ -652,6 +782,8 @@ def websearch_assistant(topic: str):
     valid_urls = get_valid_urls(results, min_words=100, target_count=max_sources, include_images=True)
     summaries = json.loads(summarize_webpage(valid_urls, target_count=max_sources, min_words=100, include_images=True))
     return _safe_json_dumps(summaries)
+
+
 @app.route("/pdf", methods=["POST"])
 def pdf():
     try:
@@ -687,6 +819,8 @@ def pdf():
     except Exception as e:
         logging.error(f"PDF endpoint error: {str(e)}")
         return jsonify({"error": str(e)}), 500
+
+
 @app.route("/crawl", methods=["POST"])
 def crawl():
     data = request.get_json()
@@ -697,13 +831,12 @@ def crawl():
     if not query.startswith(("http://", "https://")):
         query = f"https://{query}"
 
-    # Check if URL is localhost or likely invalid
     parsed_url = urlparse(query)
     if parsed_url.hostname in ("localhost", "127.0.0.1", "::1"):
         logging.info(f"Skipping crawl for localhost URL: {query}")
         return jsonify({
             "site": query,
-            "content": "",  # Empty content as requested
+            "content": "",
             "images": []
         }), 200
 
@@ -713,16 +846,18 @@ def crawl():
                 "site": query,
                 "content": "",
                 "images": []
-            }), 200  # Avoid error for YouTube URLs
+            }), 200
         result = fetch_and_clean_webpage(query, include_images=True)
         return jsonify(result), 200
     except Exception as e:
         logging.warning(f"Crawl failed for {query}: {str(e)}")
         return jsonify({
             "site": query,
-            "content": "",  # Empty content for failed crawls
+            "content": "",
             "images": []
         }), 200
+
+
 @app.route("/youtube", methods=["POST"])
 def youtube():
     data = request.get_json()
@@ -733,6 +868,8 @@ def youtube():
         return jsonify(fetch_youtube_content(query))
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+
 @app.route("/news", methods=["POST"])
 def news():
     data = request.get_json()
@@ -743,6 +880,8 @@ def news():
         return jsonify(json.loads(news_assistant(query)))
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+
 @app.route("/websearch", methods=["POST"])
 def websearch():
     data = request.get_json()
@@ -753,6 +892,8 @@ def websearch():
         return jsonify(json.loads(websearch_assistant(query)))
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+
 @app.route("/weather", methods=["POST"])
 def weather():
     data = request.get_json()
@@ -763,5 +904,7 @@ def weather():
         return jsonify(weather_assistant(city))
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=False)
