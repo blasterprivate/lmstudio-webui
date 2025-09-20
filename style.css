@@ -1151,3 +1151,397 @@ textarea.input {
     min-width: 60px;
   }
 }
+
+/* Mobile improvements */
+@media (max-width: 768px) {
+  .messages {
+    padding: 16px 12px 12px;
+    max-width: 100%;
+  }
+
+  .bubble {
+    max-width: 100%;
+    word-break: break-word;
+    overflow-wrap: break-word;
+  }
+
+  .bubble-text pre,
+  .bubble-text code {
+    max-width: 100%;
+    overflow-x: auto;
+    word-break: break-word;
+    white-space: pre-wrap;
+  }
+
+  .bubble-text table {
+    display: block;
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .bubble-text th,
+  .bubble-text td {
+    min-width: auto;
+    word-break: break-word;
+    padding: 4px 6px;
+    font-size: 12px;
+  }
+
+  .composer {
+    flex-direction: row; /* Keep row for textarea and single button */
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 8px;
+    align-items: center;
+    justify-content: center;
+  }
+
+  textarea.input {
+    flex: 1; /* Take full available width */
+    width: 100%;
+    min-height: 80px; /* Increased for better usability */
+    max-height: 300px; /* Allow more expansion */
+    font-size: 16px; /* Slightly larger text */
+    padding: 12px 16px; /* More comfortable padding */
+    min-width: 0;
+    margin-bottom: 8px;
+  }
+
+  /* Hide individual buttons on mobile */
+  #webBtn,
+  #settingsBtn,
+  #pdfBtn,
+  .youtube-btn,
+  button#sendBtn {
+    display: none; /* Hide all buttons */
+  }
+
+  /* Style for new combined action button */
+  .action-menu-btn {
+    display: flex; /* Show on mobile */
+    min-width: 44px;
+    min-height: 44px;
+    padding: 8px;
+    font-size: 16px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    color: var(--text);
+    cursor: pointer;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: background 0.2s ease, transform 0.2s ease;
+  }
+
+  .action-menu-btn:hover {
+    background: var(--accent);
+    color: var(--panel);
+    transform: scale(1.1);
+  }
+
+  /* Action menu modal styles */
+  #actionMenuModal {
+    width: 200px;
+    max-width: 90%;
+    padding: 12px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    z-index: 1000;
+    display: none;
+  }
+
+  #actionMenuModal.active {
+    display: block;
+  }
+
+  #actionMenuModal .action-item {
+    padding: 10px 12px;
+    font-size: 14px;
+    color: var(--text);
+    cursor: pointer;
+    border-radius: 8px;
+    text-align: left;
+  }
+
+  #actionMenuModal .action-item:hover {
+    background: var(--accent);
+    color: var(--panel);
+  }
+
+  /* Adjust controls buttons for mobile */
+  .controls .copy-btn,
+  .controls .sources-btn,
+  .controls .retry-btn,
+  .controls .edit-btn {
+    font-size: 11px;
+    padding: 4px 6px;
+    min-width: 36px;
+    min-height: 36px;
+  }
+
+  /* Fix inline-copy-btn positioning */
+  .inline-copy-btn {
+    top: 6px;
+    right: 6px;
+    font-size: 9px;
+    padding: 3px 5px;
+  }
+
+  /* Adjust scroll button to avoid overlap with composer */
+  #scrollBtn {
+    bottom: 120px;
+    right: 12px;
+    left: auto;
+    transform: none;
+    width: 32px;
+    height: 32px;
+    font-size: 16px;
+  }
+}
+/* General styles for action menu button and modal (outside media query) */
+.action-menu-btn {
+  display: none; /* Hidden by default, shown on mobile */
+  min-width: 44px;
+  min-height: 44px;
+  padding: 8px;
+  font-size: 16px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  color: var(--text);
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.action-menu-btn:hover {
+  background: var(--accent);
+  color: var(--panel);
+  transform: scale(1.1);
+}
+
+.actions-modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+  max-width: 80%;
+  max-height: 80%;
+  overflow: auto;
+  z-index: 1000;
+  display: none;
+}
+
+.actions-modal.active {
+  display: block;
+}
+
+.actions-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.action-item {
+  padding: 12px 16px;
+  cursor: pointer;
+  color: var(--text);
+  font-size: 14px;
+  border-radius: 8px;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.action-item:hover {
+  background: var(--accent);
+  color: var(--panel);
+}
+
+.actions-modal .close-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: white;
+  font-size: 16px;
+  padding: 8px 12px;
+  border-radius: 50%;
+  cursor: pointer;
+  z-index: 1002;
+}
+
+.actions-modal .close-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* Mobile improvements */
+@media (max-width: 768px) {
+  .messages {
+    padding: 16px 12px 12px;
+    max-width: 100%;
+  }
+
+  .bubble {
+    max-width: 100%;
+    word-break: break-word;
+    overflow-wrap: break-word;
+  }
+
+  .bubble-text pre,
+  .bubble-text code {
+    max-width: 100%;
+    overflow-x: auto;
+    word-break: break-word;
+    white-space: pre-wrap;
+  }
+
+  .bubble-text table {
+    display: block;
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .bubble-text th,
+  .bubble-text td {
+    min-width: auto;
+    word-break: break-word;
+    padding: 4px 6px;
+    font-size: 12px;
+  }
+
+  .composer {
+    display: flex; /* Ensure flexbox is active */
+    flex-direction: row; /* Horizontal layout */
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 8px;
+    align-items: center;
+    justify-content: space-between; /* Left: plus, Right: send, Middle: textarea */
+    width: 100%; /* Ensure full width */
+  }
+
+  textarea.input {
+    flex: 1; /* Allow textarea to grow */
+    width: 100%; /* Full width within flex */
+    min-height: 80px;
+    max-height: 300px;
+    font-size: 16px;
+    padding: 12px 16px;
+    min-width: 0;
+    margin-bottom: 8px;
+    order: 2; /* Middle position */
+    box-sizing: border-box; /* Include padding in width */
+  }
+
+  /* Ensure action menu button is on the left */
+  #actionMenuBtn {
+    display: flex !important; /* Force display */
+    order: 1; /* Left position */
+    min-width: 44px;
+    min-height: 44px;
+    padding: 8px;
+    font-size: 16px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    color: var(--text);
+    cursor: pointer;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: background 0.2s ease, transform 0.2s ease;
+  }
+
+  #actionMenuBtn:hover {
+    background: var(--accent);
+    color: var(--panel);
+    transform: scale(1.1);
+  }
+
+  /* Ensure send button is on the right */
+  #sendBtn {
+    display: flex !important; /* Force display */
+    order: 3; /* Right position */
+    min-width: 44px;
+    min-height: 44px;
+    padding: 8px;
+    font-size: 16px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    color: var(--text);
+    cursor: pointer;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: background 0.2s ease, transform 0.2s ease;
+    margin-left: auto; /* Push to the right edge */
+  }
+
+  #sendBtn:hover {
+    background: var(--accent);
+    color: var(--panel);
+    transform: scale(1.1);
+  }
+
+  /* Hide other buttons on mobile */
+  #webBtn,
+  #settingsBtn,
+  #pdfBtn,
+  #youtubeToggleBtn {
+    display: none !important; /* Force hide */
+  }
+
+  /* Adjust controls buttons for mobile */
+  .controls .copy-btn,
+  .controls .sources-btn,
+  .controls .retry-btn,
+  .controls .edit-btn {
+    font-size: 11px;
+    padding: 4px 6px;
+    min-width: 36px;
+    min-height: 36px;
+  }
+
+  /* Fix inline-copy-btn positioning */
+  .inline-copy-btn {
+    top: 6px;
+    right: 6px;
+    font-size: 9px;
+    padding: 3px 5px;
+  }
+
+  /* Adjust scroll button to avoid overlap with composer */
+  #scrollBtn {
+    bottom: 120px;
+    right: 12px;
+    left: auto;
+    transform: none;
+    width: 32px;
+    height: 32px;
+    font-size: 16px;
+  }
+
+  /* Style action menu modal for mobile */
+  #actionMenuModal {
+    max-width: 90%;
+    padding: 16px;
+  }
+
+  #actionMenuModal .action-item {
+    font-size: 13px;
+    padding: 10px 14px;
+  }
+}
