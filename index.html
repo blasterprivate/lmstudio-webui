@@ -13,6 +13,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
     <link rel="stylesheet" href="style.css">
+    
   </head>
   <body>
     <div class="app">
@@ -34,46 +35,60 @@
           </div>
         </header>
         <section id="messages" class="messages" role="log" aria-live="polite"></section>
-        <footer class="composer-wrap">
-          <div class="composer">
-            <button id="settingsBtn" class="settings-btn" title="Edit System Prompts">
-              <i class="fas fa-cog"></i>
-            </button>
-            <button id="pdfBtn" title="Upload PDF">
-              <i class="fas fa-file-pdf"></i>
-            </button>
-            <input id="pdfInput" type="file" accept="application/pdf" style="display:none" />
-            <button id="youtubeToggleBtn" class="youtube-btn" title="Toggle YouTube Embeds">
-              <i class="fab fa-youtube"></i>
-            </button>
-            <button id="webBtn" aria-label="Toggle Web Search">
-              <i class="fas fa-globe"></i>
-            </button>
-            <textarea id="input" class="input" rows="1" placeholder="Ask anything..."></textarea>
-            <button id="sendBtn" class="btn primary" aria-label="Send message">
-              <svg class="send-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
-                <path d="M15.854.146a.5.5 0 0 0-.537-.097l-15 7a.5.5 0 0 0 0 .902l15 7a.5.5 0 0 0 .683-.558L13.682 8l2.855-7.146a.5.5 0 0 0-.683-.708z" />
-              </svg>
-              <svg class="stop-icon" style="display: none;" xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
-                <path d="M4 4h8v8H4z" fill-rule="evenodd" />
-              </svg>
-            </button>
-          </div>
-          <div id="modalOverlay" class="modal-overlay"></div>
-          <div id="crawlModal" class="modal">
-            <div id="modalContent" class="modal-content"></div>
-          </div>
-          <div id="settingsModal" class="modal">
-            <div id="settingsModalContent" class="settings-modal-content"></div>
-          </div>
-          <div id="imageModal" class="modal image-modal">
-            <button class="close-btn" aria-label="Close image modal">✕</button>
-            <img id="expandedImage" src="" alt="Expanded image">
-            <div id="imageSourceContainer">
-              <p id="imageSourceLink"></p>
-            </div>
-          </div>
-        </footer>
+<footer class="composer-wrap">
+  <div class="composer">
+    <button id="settingsBtn" class="settings-btn" title="Edit System Prompts">
+      <i class="fas fa-cog"></i>
+    </button>
+    <button id="pdfBtn" title="Upload PDF">
+      <i class="fas fa-file-pdf"></i>
+    </button>
+    <input id="pdfInput" type="file" accept="application/pdf" style="display:none" />
+    <button id="youtubeToggleBtn" class="youtube-btn" title="Toggle YouTube Embeds">
+      <i class="fab fa-youtube"></i>
+    </button>
+    <button id="webBtn" aria-label="Toggle Web Search">
+      <i class="fas fa-globe"></i>
+    </button>
+    <textarea id="input" class="input" rows="1" placeholder="Ask anything..."></textarea>
+    <button id="sendBtn" class="btn primary" aria-label="Send message">
+      <svg class="send-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
+        <path d="M15.854.146a.5.5 0 0 0-.537-.097l-15 7a.5.5 0 0 0 0 .902l15 7a.5.5 0 0 0 .683-.558L13.682 8l2.855-7.146a.5.5 0 0 0-.683-.708z" />
+      </svg>
+      <svg class="stop-icon" style="display: none;" xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
+        <path d="M4 4h8v8H4z" fill-rule="evenodd" />
+      </svg>
+    </button>
+<button id="actionMenuBtn" class="action-menu-btn" title="More Options">
+  <i class="fas fa-plus"></i>
+</button>
+  </div>
+  <div id="modalOverlay" class="modal-overlay"></div>
+  <div id="crawlModal" class="modal">
+    <div id="modalContent" class="modal-content"></div>
+  </div>
+  <div id="settingsModal" class="modal">
+    <div id="settingsModalContent" class="settings-modal-content"></div>
+  </div>
+  <div id="imageModal" class="modal image-modal">
+    <button class="close-btn" aria-label="Close image modal">✕</button>
+    <img id="expandedImage" src="" alt="Expanded image">
+    <div id="imageSourceContainer">
+      <p id="imageSourceLink"></p>
+      <p id="imageMetaDescription" style="margin: 0; font-size: 0.9em; color: #ccc; font-style: italic;"></p>
+    </div>
+  </div>
+<div id="actionMenuModal" class="modal actions-modal">
+  <button class="close-btn" aria-label="Close actions modal">✕</button>
+  <ul id="actionsList" class="actions-list">
+    <li id="actionWebSearch" class="action-item"><i class="fas fa-globe"></i> Web Search</li>
+    <li id="actionYouTube" class="action-item"><i class="fab fa-youtube"></i> YouTube Embeds</li>
+    <li id="actionPDF" class="action-item"><i class="fas fa-file-pdf"></i> Upload PDF</li>
+    <li id="actionSettings" class="action-item"><i class="fas fa-cog"></i> Settings</li>
+    <li id="actionSend" class="action-item"><i class="fas fa-paper-plane"></i> Send Message</li>
+  </ul>
+</div>
+</footer>
       </main>
     </div>
     <script src="api.js"></script>
