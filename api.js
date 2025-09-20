@@ -34,41 +34,41 @@ const actionSettings = document.getElementById('actionSettings');
 
 
 function toggleActionMenuModal() {
-  actionMenuModal.classList.toggle('active');
-  modalOverlay.classList.toggle('active');
+    actionMenuModal.classList.toggle('active');
+    modalOverlay.classList.toggle('active');
 }
 
 actionMenuBtn.addEventListener('click', toggleActionMenuModal);
 actionMenuCloseBtn.addEventListener('click', toggleActionMenuModal);
 
 actionWebSearch.addEventListener('click', () => {
-  document.getElementById('webBtn').click();
-  toggleActionMenuModal();
+    document.getElementById('webBtn').click();
+    toggleActionMenuModal();
 });
 
 actionYouTube.addEventListener('click', () => {
-  document.getElementById('youtubeToggleBtn').click();
-  toggleActionMenuModal();
+    document.getElementById('youtubeToggleBtn').click();
+    toggleActionMenuModal();
 });
 
 actionPDF.addEventListener('click', () => {
-  document.getElementById('pdfInput').click();
-  toggleActionMenuModal();
+    document.getElementById('pdfInput').click();
+    toggleActionMenuModal();
 });
 
 actionSettings.addEventListener('click', () => {
-  document.getElementById('settingsBtn').click();
-  toggleActionMenuModal();
+    document.getElementById('settingsBtn').click();
+    toggleActionMenuModal();
 });
 
 
 // Update existing modalOverlay listener to include actionMenuModal
 modalOverlay.addEventListener('click', () => {
-  modalEl.classList.remove('active');
-  settingsModal.classList.remove('active');
-  imageModal.classList.remove('active');
-  actionMenuModal.classList.remove('active');
-  modalOverlay.classList.remove('active');
+    modalEl.classList.remove('active');
+    settingsModal.classList.remove('active');
+    imageModal.classList.remove('active');
+    actionMenuModal.classList.remove('active');
+    modalOverlay.classList.remove('active');
 });
 
 // Auto-scroll flag (starts enabled)
@@ -1559,26 +1559,26 @@ async function sendMessage(isRetry = false) {
 
                 // Structure images with sourceUrl for each article
                 images = newsData.articles.reduce((acc, article) => {
-    if (article.images && Array.isArray(article.images)) {
-        return [...acc, ...article.images.map(img => ({
-            url: img,
-            sourceUrl: article.site || "",
-            metaDescription: (article.meta_description && article.meta_description !== "* * *") ? article.meta_description : (article.title || "No description available") // Enhanced fallback
-        }))];
-    }
-    return acc;
-}, []);
+                    if (article.images && Array.isArray(article.images)) {
+                        return [...acc, ...article.images.map(img => ({
+                            url: img,
+                            sourceUrl: article.site || "",
+                            metaDescription: (article.meta_description && article.meta_description !== "* * *") ? article.meta_description : (article.title || "No description available") // Enhanced fallback
+                        }))];
+                    }
+                    return acc;
+                }, []);
 
                 newsText = formatNewsResponse(newsData);
                 // Map articles to include datetime from times[0]
-const mappedNewsData = newsData.articles.map(article => ({
-    title: article.title || "No title",
-    site: article.site || "",
-    url: article.url || "",
-    summary: article.summary || article.meta_description || "No summary available",
-    images: Array.isArray(article.images) ? article.images : [],
-    datetime: (article.times && article.times[0] && article.times[0].datetime) || null
-}));
+                const mappedNewsData = newsData.articles.map(article => ({
+                    title: article.title || "No title",
+                    site: article.site || "",
+                    url: article.url || "",
+                    summary: article.summary || article.meta_description || "No summary available",
+                    images: Array.isArray(article.images) ? article.images : [],
+                    datetime: (article.times && article.times[0] && article.times[0].datetime) || null
+                }));
 
                 const systemMessage = {
                     role: "system",
@@ -1648,15 +1648,15 @@ const mappedNewsData = newsData.articles.map(article => ({
                 }
 
                 images = searchData.reduce((acc, result, idx) => {
-    if (result.images && Array.isArray(result.images)) {
-        return [...acc, ...result.images.map(img => ({
-            url: img,
-            sourceUrl: result.site || "",  // Use the specific result.site as valid URL
-            metaDescription: result.meta_description || result.title   // Associate with this result's meta_description
-        }))];
-    }
-    return acc;
-}, []);
+                    if (result.images && Array.isArray(result.images)) {
+                        return [...acc, ...result.images.map(img => ({
+                            url: img,
+                            sourceUrl: result.site || "", // Use the specific result.site as valid URL
+                            metaDescription: result.meta_description || result.title // Associate with this result's meta_description
+                        }))];
+                    }
+                    return acc;
+                }, []);
 
                 searchText = formatWebsearchResponse(searchData);
                 const systemMessage = {
@@ -1712,15 +1712,15 @@ const mappedNewsData = newsData.articles.map(article => ({
                 let searchData = await searchRes.json();
                 if (searchRes.ok && Array.isArray(searchData) && searchData.length > 0) {
                     images = searchData.reduce((acc, result) => {
-    if (result.images && Array.isArray(result.images)) {
-        return [...acc, ...result.images.map(img => ({
-            url: img,
-            sourceUrl: result.site || "",
-            metaDescription: (result.meta_description && result.meta_description !== "* * *") ? result.meta_description : (result.title || "No description available") // Enhanced fallback
-        }))];
-    }
-    return acc;
-}, []);
+                        if (result.images && Array.isArray(result.images)) {
+                            return [...acc, ...result.images.map(img => ({
+                                url: img,
+                                sourceUrl: result.site || "",
+                                metaDescription: (result.meta_description && result.meta_description !== "* * *") ? result.meta_description : (result.title || "No description available") // Enhanced fallback
+                            }))];
+                        }
+                        return acc;
+                    }, []);
 
                     const searchContext = formatWebsearchResponse(searchData);
                     const systemMessage = {
@@ -1788,8 +1788,7 @@ const mappedNewsData = newsData.articles.map(article => ({
                     const systemMessage = {
                         role: "system",
                         content: isYouTube ?
-                            systemPrompts.youtube.replace("{content}", crawledText).replace("{metadata}", JSON.stringify(metadata)) :
-                            systemPrompts.crawl.replace("{content}", crawledText).replace("{metadata}", JSON.stringify(metadata)),
+                            systemPrompts.youtube.replace("{content}", crawledText).replace("{metadata}", JSON.stringify(metadata)) : systemPrompts.crawl.replace("{content}", crawledText).replace("{metadata}", JSON.stringify(metadata)),
                         id: `system-${Date.now()}`
                     };
                     currentChat = [
@@ -1914,37 +1913,37 @@ const mappedNewsData = newsData.articles.map(article => ({
                     const imageContainer = document.createElement("div");
                     imageContainer.className = "image-container";
                     images.forEach((imgData, idx) => {
-    const img = document.createElement("img");
-    img.src = imgData.url || imgData; // Fallback for plain string images
-    img.alt = finalMetadata && finalMetadata.fromWebSearch ? "Thumbnail from web search result" : finalMetadata && finalMetadata.fromNews ? "Thumbnail from news article" : "Thumbnail from crawled page";
-    img.className = "image-thumbnail";
-    img.setAttribute("loading", "lazy");
-    // Store source URL and meta_description
-    img.dataset.sourceUrl = imgData.sourceUrl || finalSourceUrl || "";
-    img.dataset.metaDescription = imgData.metaDescription || "";  // New: Store meta_description
-    img.addEventListener("click", () => {
-    expandedImage.src = img.src;
-    const sourceLinkEl = document.getElementById("imageSourceLink");
-    const sourceUrl = img.dataset.sourceUrl;
-    const metaDesc = img.dataset.metaDescription;
-    if (sourceUrl) {
-        const isValidUrl = /^https?:\/\//.test(sourceUrl);
-        if (isValidUrl) {
-            sourceLinkEl.innerHTML = `<a href="${sourceUrl}" target="_blank" rel="noopener noreferrer">${sourceUrl}</a><br><small>${metaDesc || "No description available"}</small>`;
-        } else {
-            sourceLinkEl.innerHTML = `${sourceUrl}<br><small>${metaDesc || "No description available"}</small>`;
-        }
-    } else {
-        sourceLinkEl.innerHTML = "No source URL available";
-    }
-    imageModal.classList.add("active");
-});
-    img.onerror = () => {
-        console.warn(`Failed to load image: ${img.src}`);
-        img.style.display = "none";
-    };
-    imageContainer.appendChild(img);
-});
+                        const img = document.createElement("img");
+                        img.src = imgData.url || imgData; // Fallback for plain string images
+                        img.alt = finalMetadata && finalMetadata.fromWebSearch ? "Thumbnail from web search result" : finalMetadata && finalMetadata.fromNews ? "Thumbnail from news article" : "Thumbnail from crawled page";
+                        img.className = "image-thumbnail";
+                        img.setAttribute("loading", "lazy");
+                        // Store source URL and meta_description
+                        img.dataset.sourceUrl = imgData.sourceUrl || finalSourceUrl || "";
+                        img.dataset.metaDescription = imgData.metaDescription || ""; // New: Store meta_description
+                        img.addEventListener("click", () => {
+                            expandedImage.src = img.src;
+                            const sourceLinkEl = document.getElementById("imageSourceLink");
+                            const sourceUrl = img.dataset.sourceUrl;
+                            const metaDesc = img.dataset.metaDescription;
+                            if (sourceUrl) {
+                                const isValidUrl = /^https?:\/\//.test(sourceUrl);
+                                if (isValidUrl) {
+                                    sourceLinkEl.innerHTML = `<a href="${sourceUrl}" target="_blank" rel="noopener noreferrer">${sourceUrl}</a><br><small>${metaDesc || "No description available"}</small>`;
+                                } else {
+                                    sourceLinkEl.innerHTML = `${sourceUrl}<br><small>${metaDesc || "No description available"}</small>`;
+                                }
+                            } else {
+                                sourceLinkEl.innerHTML = "No source URL available";
+                            }
+                            imageModal.classList.add("active");
+                        });
+                        img.onerror = () => {
+                            console.warn(`Failed to load image: ${img.src}`);
+                            img.style.display = "none";
+                        };
+                        imageContainer.appendChild(img);
+                    });
                     botBubble.bubble.appendChild(imageContainer);
                 }
             }
